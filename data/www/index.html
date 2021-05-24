@@ -1,0 +1,65 @@
+<!DOCTYPE html>    
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lotus ABS Tool</title>
+    <style>
+        /* no zoom with doubletouch */
+        * {
+          -ms-touch-action: manipulation;
+          touch-action: manipulation;
+        }
+        table
+        {
+            border-collapse: collapse; /* 'cellspacing' equivalent */
+        }
+        table td, table th
+        {
+            padding: 2; /* 'cellpadding' equivalent */
+        }
+        .header {
+          font-family: "Lucida Console", Courier, monospace;
+          color: black;
+          text-align: center;
+          font-size: 30px;
+        }
+    </style>
+    <link rel="stylesheet" href="css/bootstrap.min.css">
+    <link rel="stylesheet" href="js/bootstrap.min.js">
+    <script src="js/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <table>
+        <tr>
+            <td>
+                <img src="img/brake.svg" height=50>
+            </td>
+            <td class=header>
+                Lotus ABS Tool 
+            </td>
+        </tr>
+    </table>
+    <p></p>
+    <button type="button" class="btn btn-primary" id="btn-StartCommunication">StartCommunication</button>
+    
+    <script>
+        $(document).ready(function() {
+            $("#btn-StartCommunication").on("click", function(e) {
+                e.preventDefault();
+                $.ajax({type: "GET",
+                    url: "/StartCommunication",
+                    data: { id: $(this).val() },
+                    success:function(result) {
+                        //  alert('ok');
+                    },
+                    error:function(result) {
+                        alert('error');
+                    }
+                });
+            });
+        });      
+    </script>
+</body>
+</html>
