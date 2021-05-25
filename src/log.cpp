@@ -7,6 +7,7 @@
 
 #include <Arduino.h>
 #include <stdint.h>
+#include "mqtt.h"
 #include "log.h"
 
 // log message to all enabled sinks
@@ -21,4 +22,6 @@ void log_msg(const char *fmt, ...)
 
     if (log_serial_enabled)
         Serial.print(buffer);          
+    if (log_mqtt_enabled)
+        mqtt_log("msg", buffer);            
 }

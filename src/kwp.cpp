@@ -9,8 +9,9 @@ KWP2K::KWP2K(uint8_t tx_pin, uint8_t rx_pin)
     _rx_pin = rx_pin;
     _ECUaddress = KWP2k_DEFAULT_ECUADDRESS;
     _Testeraddress = KWP2K_DEFAULT_TESTERADDRESS;
-    _ser =  new SoftwareSerial(_tx_pin, _rx_pin);
+    _ser =  new SoftwareSerial(_rx_pin, _tx_pin);
     _ser->begin(KWP2K_BAUDRATE);
+    this->resetFlags();
 }
 
 KWP2K::KWP2K(uint8_t tx_pin, uint8_t rx_pin, uint8_t ECUaddress)
@@ -19,8 +20,9 @@ KWP2K::KWP2K(uint8_t tx_pin, uint8_t rx_pin, uint8_t ECUaddress)
     _rx_pin = rx_pin;
     _ECUaddress = ECUaddress;
     _Testeraddress = KWP2K_DEFAULT_TESTERADDRESS;
-    _ser =  new SoftwareSerial(_tx_pin, _rx_pin);
+    _ser =  new SoftwareSerial(_rx_pin, _tx_pin);
     _ser->begin(KWP2K_BAUDRATE);
+    this->resetFlags();
 }
 
 KWP2K::KWP2K(uint8_t tx_pin, uint8_t rx_pin, uint8_t ECUaddress, uint8_t Testeraddress)
@@ -29,47 +31,66 @@ KWP2K::KWP2K(uint8_t tx_pin, uint8_t rx_pin, uint8_t ECUaddress, uint8_t Testera
     _rx_pin = rx_pin;
     _ECUaddress = ECUaddress;
     _Testeraddress = Testeraddress;
-    _ser =  new SoftwareSerial(_tx_pin, _rx_pin);
+    _ser =  new SoftwareSerial(_rx_pin, _tx_pin);
     _ser->begin(KWP2K_BAUDRATE);
+    this->resetFlags();
+}
+
+void KWP2K::resetFlags()
+{
+    _do_fastInitFlag = false;
+    _do_sendMsgFlag = false;
 }
 
 // Proccess
 void KWP2K::process()
-{    
+{      
+    if (_do_fastInitFlag)
+        this->fastInit();
+
+    if (_do_sendMsgFlag)     
+        this->sendMsg(_msgtx);   
+
     uint8_t n=0;
     while (_ser->available())
     {
           uint8_t in = _ser->read();      
           n++;
-          printf(" %02x", in);      
+          log_msg(" %02x", in);      
     }
     if (n)
-        printf("\n");
+        log_msg("\n");
     
 }
 
 // Fast Init
 void KWP2K::fastInit()
 {
+    _do_fastInitFlag = false;
 #ifdef DBG_KWP2K
-    log_msg("KWP2K::fastInit()\n");      
+    log_msg("KWP2K::fastInit(tx_pin=%d)\n", _tx_pin);      
 #endif     
+    _ser->end();
+    pinMode(_tx_pin, OUTPUT);    
     digitalWrite (_tx_pin, HIGH);  
     delay(500);             
     digitalWrite (_tx_pin, LOW);      
     delay(25);
     digitalWrite (_tx_pin, HIGH); 
-    delay(25);                   
+    delay(25); 
+    _ser->begin(KWP2K_BAUDRATE); 
 }
 
 // functions
 void KWP2K::StartCommunication()
 {    
-  _msg_StartCommunication.setFmt(KWPMSG_HM2, 1);  
-  _msg_StartCommunication.setSrc(_Testeraddress);  
-  _msg_StartCommunication.setTgt(_ECUaddress);
-  _msg_StartCommunication.setSId(KWP_SID_STARTCOMMUNICATION);  
-  _msg_StartCommunication.print(); 
+  _msgtx.setFmt(KWPMSG_HM2, 1);  
+  _msgtx.setSrc(_Testeraddress);  
+  _msgtx.setTgt(_ECUaddress);
+  _msgtx.setSId(KWP_SID_STARTCOMMUNICATION);  
+  _msgtx.print();   
+  _do_fastInitFlag = true;
+  _do_sendMsgFlag = true;
 }
 
 // addressing
@@ -82,6 +103,27 @@ void KWP2K::setTesteraddress(uint8_t Testeraddress)
     _Testeraddress = Testeraddress;
 }
 
+void KWP2K::sendMsg(KWP2KMsg msg)
+{
+    _do_sendMsgFlag = false;
+
+#ifdef DBG_KWP2K
+    log_msg("KWP2K::sendMsg()\n");      
+#endif         
+    uint8_t data_len = msg.getBytesLen();
+    uint8_t *data = msg.getBytes();
+    log_msg("   data_len: %d\n", data_len);
+
+    uint8_t i;    
+    _ser->begin(KWP2K_BAUDRATE);
+    for(i=0;i<data_len;i++)
+    {        
+        _ser->write(data[i]);
+    }
+    log_msg("   sent !\n");
+   
+    free(data);    
+}
 
 
 // ===============================================
@@ -133,6 +175,24 @@ uint8_t KWP2KMsg::getCS(void)
     // TODO: add _msg.Data bytes to checksum
     return(sum);
 }
+
+uint8_t *KWP2KMsg::getBytes(void)
+{
+    uint8_t *buf = (uint8_t*)malloc(255);        // TODO: proper len calc
+
+    buf[0] = _msg.Fmt;
+    buf[1] = _msg.Tgt;
+    buf[2] = _msg.Src;
+    buf[3] = _msg.SId;
+    buf[4] = this->getCS();
+    return(buf);
+}
+
+uint8_t KWP2KMsg::getBytesLen(void)
+{
+    return((_msg.Fmt&0x3F) +4);
+}
+
 
 void KWP2KMsg::print(void)
 {

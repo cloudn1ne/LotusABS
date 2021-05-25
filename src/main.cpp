@@ -3,9 +3,11 @@
 #include <FS.h>     
 #include <TaskScheduler.h>
 #include <stdint.h>
+#include <LittleFS.h>
 
 #include "web.h"
 #include "kwp.h"
+#include "mqtt.h"
 #include "log.h"
 
 // #define   DBG_TASKS
@@ -13,75 +15,55 @@
 #define TX 1
 #define RX 3
 #define LED_OK  16
-// SoftwareSerial ECU(3,1);
-KWP2K ABS(3,1);
+KWP2K ABS(TX, RX);
+
+AsyncWebServer server(80);
 
 Scheduler Taskrunner;
 void OKLEDTaskCallback();
 Task OKLEDTask(1000, -1, &OKLEDTaskCallback);
+
 bool state_ok_led = true;
 
+uint8_t ecu_addr_glob = 0x1;
 
-int messagelength = 5;
-byte message[5] = {
-// FMT  TGT  SRC  SID  CRC
-  0x81,0x12,0xF1,0x81,0x05
-};
-
-/*
-void sendrequest() {
-  Serial.println("send request");
-  for (int i = 0; i < messagelength ; i++) {
-    ECU.write(message[i]);
-    Serial.print("sending data: ");
-    Serial.println(message[i], HEX);
-  } 
-  Serial.println("request sent");
-}
-
-void receivereply()
-{
-  Serial.print("RX: ");
-  if (ECU.available()) {
-      byte inByte = ECU.read();      
-      Serial.print(inByte,HEX);
-      Serial.print(" ");
-  }
-  Serial.println();
-}
-     
-*/
 
 void setup() {
 
   // Taskrunner
   Taskrunner.init();
   Taskrunner.addTask(OKLEDTask);
-
+  
   // Setup Serial
   Serial.begin(10400);
   
   // SETUP WiFI  
-  WiFi.mode(WIFI_STA);
-  int status = WL_IDLE_STATUS;
-  status = WiFi.begin("CLOUD9", "deepspace48");
-  
+  WiFi.mode(WIFI_STA);  
+  WiFi.begin("CLOUD9", "deepspace48");  
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
   }
-  Serial.println("");  
-  Serial.print("IP address: ");
-  Serial.println(WiFi.localIP());
- 
+
+  mqtt_setup();
+
+  log_msg("\n===================================\nLotusABS IP address is: %d.%d.%d.%d\n", WiFi.localIP()[0], WiFi.localIP()[1], WiFi.localIP()[2], WiFi.localIP()[3]);
+  
+
   // SETUP WWW
-  if (!SPIFFS.begin())
+  if (!LittleFS.begin())
   {
-    Serial.println("unable to init SPIFFS");
+    Serial.println("unable to init LittleFS");
   }
-  server.serveStatic("/", SPIFFS, "/www/").setDefaultFile("index.html");
+  server.serveStatic("/", LittleFS, "/www/").setDefaultFile("index.html");
   server.on("/StartCommunication", HTTP_GET, [](AsyncWebServerRequest *request) {    
-      ABS.fastInit();
+      uint8_t ecu_addr;           
+      if (request->hasArg("ecu_addr"))
+      {
+        ecu_addr = request->arg("ecu_addr").toInt();
+        log_msg("using ECU addr: %02x\n", ecu_addr);
+        ABS.setECUaddress(ecu_addr);
+      }                
       ABS.StartCommunication();
       request->send(200, "application/json", "{ \"status\" : true }");
   });
@@ -91,7 +73,7 @@ void setup() {
 
   // SETUP Pins
   pinMode(LED_OK, OUTPUT);  
-
+  
   // enable Tasks
   OKLEDTask.enable();
 }
@@ -107,7 +89,9 @@ void OKLEDTaskCallback()
 
 void loop() {
 
+  mqtt_loop();
   ABS.process();
   AsyncElegantOTA.loop();
   Taskrunner.execute();
 }
+

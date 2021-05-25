@@ -11,7 +11,7 @@
 #define KWP_SID_STARTCOMMUNICATION  0x81
 
 #define KWP2K_DEFAULT_TESTERADDRESS 0xF1
-#define KWP2k_DEFAULT_ECUADDRESS    0x20
+#define KWP2k_DEFAULT_ECUADDRESS    0x2B
 
 #define KWP2K_BAUDRATE              10400
 
@@ -39,6 +39,8 @@ class KWP2KMsg
         void setSId(uint8_t sid);
         uint8_t getCS(void);
         void print(void);
+        uint8_t *getBytes(void);
+        uint8_t getBytesLen(void);
 
     private:
         KWP2KMessageStruct _msg;
@@ -52,12 +54,15 @@ class KWP2K
         KWP2K(uint8_t tx_pin, uint8_t rx_pin, uint8_t ECUaddress);
         KWP2K(uint8_t tx_pin, uint8_t rx_pin, uint8_t ECUaddress, uint8_t Testeraddress);
         void setECUaddress(uint8_t ECUaddress);
-        void setTesteraddress(uint8_t Testeraddress);
-        void fastInit();
+        void setTesteraddress(uint8_t Testeraddress);        
         void StartCommunication(void);
-        void process();
+        void process();        
+        void sendMsg(KWP2KMsg msg);
 
     private:
+        void fastInit();
+        void resetFlags();
+
         // Serial Port
         SoftwareSerial *_ser;
         uint8_t _tx_pin;
@@ -67,8 +72,12 @@ class KWP2K
         uint8_t _ECUaddress;
         uint8_t _Testeraddress;      
 
-        // Default Messages
-        KWP2KMsg _msg_StartCommunication;
+        // Message to be sent
+        KWP2KMsg _msgtx;
+
+        // single shot flags
+        bool _do_fastInitFlag;
+        bool _do_sendMsgFlag;
         
 };
 
