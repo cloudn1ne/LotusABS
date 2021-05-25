@@ -1,8 +1,8 @@
 #ifndef _LOG_H
 #define _LOG_H
 
-static bool log_serial_enabled = false;
-static bool log_mqtt_enabled = true;
+extern bool log_serial_enabled;
+extern bool log_mqtt_enabled;
 
 
 void log_msg(const char *fmt, ...);

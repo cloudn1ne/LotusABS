@@ -43,6 +43,13 @@
     </table>
     <p></p>
     <button type="button" class="btn btn-primary" id="btn-StartCommunication">StartCommunication</button>
+    <button type="button" class="btn btn-secondary" id="btn-ReadECUIdentification">ReadECUIdentification</button>
+    <p></p>      
+    <button type="button" class="btn btn-primary" id="btn-ReadDataByLocalIdCB-BatteryVoltage">ReadDataByLocalIdCB BatteryVoltage</button>
+    <p></p>
+    <button type="button" class="btn btn-primary" id="btn-ReadDataByLocalIdCB-SpeedFL">ReadDataByLocalIdCB SpeedFL</button>
+    <button type="button" class="btn btn-primary" id="btn-ReadDataByLocalIdCB-SpeedFR">ReadDataByLocalIdCB SpeedFR</button>
+    <p></p>
     
     <script>
         $(document).ready(function() {
@@ -50,6 +57,62 @@
                 e.preventDefault();
                 $.ajax({type: "GET",
                     url: "/StartCommunication",
+                    data: { id: $(this).val() },
+                    success:function(result) {
+                        //  alert('ok');
+                    },
+                    error:function(result) {
+                        alert('error');
+                    }
+                });
+            });
+            // ------------------------------------------------
+            $("#btn-ReadECUIdentification").on("click", function(e) {
+                e.preventDefault();
+                $.ajax({type: "GET",
+                    url: "/ReadECUIdentification",
+                    data: { id: $(this).val() },
+                    success:function(result) {
+                        //  alert('ok');
+                    },
+                    error:function(result) {
+                        alert('error');
+                    }
+                });
+            });
+            // ------------------------------------------------
+            $("#btn-ReadDataByLocalIdCB-BatteryVoltage").on("click", function(e) {
+                e.preventDefault();
+                $.ajax({type: "GET",
+                    url: "/ReadDataByLocalId?record=48",
+                    data: { id: $(this).val() },
+                    success:function(result) {
+                        //  alert('ok');
+                    },
+                    error:function(result) {
+                        alert('error');
+                    }
+                });
+            });
+            // ------------------------------------------------
+               $("#btn-ReadDataByLocalIdCB-SpeedFL").on("click", function(e) {
+                e.preventDefault();
+                $.ajax({type: "GET",
+                    url: "/ReadDataByLocalId?record=49",
+                    data: { id: $(this).val() },
+                    success:function(result) {
+                        //  alert('ok');
+                    },
+                    error:function(result) {
+                        alert('error');
+                    }
+                });
+            });
+            // ------------------------------------------------
+            $("#btn-ReadDataByLocalIdCB-SpeedFR").on("click", function(e) {
+                e.preventDefault();
+                $.ajax({type: "GET",
+                    url: "/ReadDataByLocalId?record=50",
                     data: { id: $(this).val() },
                     success:function(result) {
                         //  alert('ok');

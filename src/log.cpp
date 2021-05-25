@@ -10,6 +10,10 @@
 #include "mqtt.h"
 #include "log.h"
 
+bool log_serial_enabled = false;
+bool log_mqtt_enabled = true;
+
+
 // log message to all enabled sinks
 void log_msg(const char *fmt, ...)
 {

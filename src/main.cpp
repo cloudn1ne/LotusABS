@@ -9,6 +9,7 @@
 #include "kwp.h"
 #include "mqtt.h"
 #include "log.h"
+#include "ebc430.h"
 
 // #define   DBG_TASKS
 
@@ -46,36 +47,51 @@ void setup() {
   }
 
   mqtt_setup();
-
   log_msg("\n===================================\nLotusABS IP address is: %d.%d.%d.%d\n", WiFi.localIP()[0], WiFi.localIP()[1], WiFi.localIP()[2], WiFi.localIP()[3]);
   
-
   // SETUP WWW
   if (!LittleFS.begin())
   {
     Serial.println("unable to init LittleFS");
   }
   server.serveStatic("/", LittleFS, "/www/").setDefaultFile("index.html");
-  server.on("/StartCommunication", HTTP_GET, [](AsyncWebServerRequest *request) {    
-      uint8_t ecu_addr;           
-      if (request->hasArg("ecu_addr"))
-      {
-        ecu_addr = request->arg("ecu_addr").toInt();
-        log_msg("using ECU addr: %02x\n", ecu_addr);
-        ABS.setECUaddress(ecu_addr);
-      }                
+  server.on("/StartCommunication", HTTP_GET, [](AsyncWebServerRequest *request) {                     
       ABS.StartCommunication();
+      request->send(200, "application/json", "{ \"status\" : true }");
+  });
+  server.on("/ReadECUIdentification", HTTP_GET, [](AsyncWebServerRequest *request) {          
+      uint8_t option = EBC_OPT_ALL;
+      if (request->hasArg("option"))
+      {
+          option = request->arg("option").toInt();                                       
+      }
+      ABS.ReadECUIdentification(option);
+      request->send(200, "application/json", "{ \"status\" : true }");
+  });
+  server.on("/ReadDataByLocalId", HTTP_GET, [](AsyncWebServerRequest *request) {          
+      uint8_t record;
+      if (request->hasArg("record"))
+      {
+          record = request->arg("record").toInt();                                       
+          ABS.ReadDataByLocalId(record);
+      }      
       request->send(200, "application/json", "{ \"status\" : true }");
   });
 
   AsyncElegantOTA.begin(&server);
   server.begin();
 
+  // ABS callbacks
+  ABS.setCallback(KWP_SID_READECUIDENTIFICATION, &ReadECUIdentificationCB);
+  ABS.setCallback(KWP_SID_READDATABYLOCALID, &ReadDataByLocalIdCB);
+  
+
+
   // SETUP Pins
   pinMode(LED_OK, OUTPUT);  
   
   // enable Tasks
-  OKLEDTask.enable();
+  OKLEDTask.enable();  
 }
 
 void OKLEDTaskCallback()
