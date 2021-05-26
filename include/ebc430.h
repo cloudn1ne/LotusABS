@@ -23,6 +23,8 @@
 // list of callbacks
 void ReadECUIdentificationCB(uint8_t *payload_bytes, uint8_t payload_len);
 void ReadDataByLocalIdCB(uint8_t *payload_bytes, uint8_t payload_len);
+void ReadDiagnosticTroubleCodeByStatusCB(uint8_t *payload_bytes, uint8_t payload_len);
+void ClearDiagnosticInformationServiceCB(uint8_t *payload_bytes, uint8_t payload_len);
 
 // ReadECUIdentification Options variables
 extern char ecu_id_designcode[12];     // Design Code A120J6000F_

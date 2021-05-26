@@ -18,7 +18,8 @@
 #define LED_OK  16
 KWP2K ABS(TX, RX);
 
-AsyncWebServer server(80);
+// AsyncWebServer server(80);
+ESP8266WebServer server(80);
 
 Scheduler Taskrunner;
 void OKLEDTaskCallback();
@@ -54,39 +55,55 @@ void setup() {
   {
     Serial.println("unable to init LittleFS");
   }
-  server.serveStatic("/", LittleFS, "/www/").setDefaultFile("index.html");
-  server.on("/StartCommunication", HTTP_GET, [](AsyncWebServerRequest *request) {                     
-      ABS.StartCommunication();
-      request->send(200, "application/json", "{ \"status\" : true }");
-  });
-  server.on("/ReadECUIdentification", HTTP_GET, [](AsyncWebServerRequest *request) {          
+  server.serveStatic("/", LittleFS, "/www/index.html");
+  server.serveStatic("/js", LittleFS, "/www/js");
+  server.serveStatic("/img", LittleFS, "/www/img");
+  server.serveStatic("/css", LittleFS, "/www/css");
+
+/*
+  server.on("/StartCommunication", HTTP_GET, []() {                     
+      ABS.StartCommunication();    
+      server.send(200, "application/json", "{ \"status\" : true }");
+  });  
+  */
+  server.on("/ReadECUIdentification", HTTP_GET, []() {            
       uint8_t option = EBC_OPT_ALL;
-      if (request->hasArg("option"))
+      if (server.hasArg("option"))
       {
-          option = request->arg("option").toInt();                                       
-      }
-      ABS.ReadECUIdentification(option);
-      request->send(200, "application/json", "{ \"status\" : true }");
+          option = server.arg("option").toInt();                                       
+         
+      }  
+      ABS.ReadECUIdentification(option);          
+      server.send(200, "application/json", "{ \"status\" : true }");
   });
-  server.on("/ReadDataByLocalId", HTTP_GET, [](AsyncWebServerRequest *request) {          
+  server.on("/ReadDataByLocalId", HTTP_GET, []() {            
       uint8_t record;
-      if (request->hasArg("record"))
+      if (server.hasArg("record"))
       {
-          record = request->arg("record").toInt();                                       
+          record = server.arg("record").toInt();                                       
           ABS.ReadDataByLocalId(record);
       }      
-      request->send(200, "application/json", "{ \"status\" : true }");
+      server.send(200, "application/json", "{ \"status\" : true }");
   });
-
-  AsyncElegantOTA.begin(&server);
+  server.on("/ReadDiagnosticTroubleCodesByStatus", HTTP_GET, []() {                  
+      ABS.ReadDiagnosticTroubleCodesByStatus();   
+      server.send(200, "application/json", "{ \"status\" : true }");
+  });
+  server.on("/ClearDiagnosticInformationService", HTTP_GET, []() {                  
+      ABS.ClearDiagnosticInformationService();   
+      server.send(200, "application/json", "{ \"status\" : true }");
+  });
+    
+  // AsyncElegantOTA.begin(&server);
+  ElegantOTA.begin(&server); 
   server.begin();
 
-  // ABS callbacks
+  // register ABS ECU callbacks
   ABS.setCallback(KWP_SID_READECUIDENTIFICATION, &ReadECUIdentificationCB);
   ABS.setCallback(KWP_SID_READDATABYLOCALID, &ReadDataByLocalIdCB);
+  ABS.setCallback(KWP_SID_READDIAGNOSTICTROUBLECODESBYSTATUS, &ReadDiagnosticTroubleCodeByStatusCB);
+  ABS.setCallback(KWP_SID_CLEARDIAGNOSTICINFORMATIONSERVICE, &ClearDiagnosticInformationServiceCB);
   
-
-
   // SETUP Pins
   pinMode(LED_OK, OUTPUT);  
   
@@ -107,7 +124,8 @@ void loop() {
 
   mqtt_loop();
   ABS.process();
-  AsyncElegantOTA.loop();
+ //  AsyncElegantOTA.loop();
   Taskrunner.execute();
+  server.handleClient();
 }
 

@@ -1,4 +1,4 @@
-<!DOCTYPE html>    
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd"> 
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -24,6 +24,24 @@
           color: black;
           text-align: center;
           font-size: 30px;
+        }   
+        .loc {
+          font-family: "Lucida Console", Courier, monospace;
+          color: black;          
+          font-size: 20px;
+        }     
+        .left {
+            text-align: right;
+        }
+        .right {
+            text-align: left;
+        }
+        .elise {                                    
+            width: 20vw;
+        }
+        .svgtable {            
+            width: 100vw;
+            height: 100vh;
         }
     </style>
     <link rel="stylesheet" href="css/bootstrap.min.css">
@@ -41,16 +59,53 @@
             </td>
         </tr>
     </table>
+    
+    <table class=svgtable border=1>
+        <tr>
+            <td>
+                <table border=0 class=left>
+                    <tr><td class=loc>Left Front</td></tr>
+                    <tr><td><button type="button" class="btn btn-primary" id="btn-lf-dump">DUMP</button></td></tr>
+                    <tr><td><button type="button" class="btn btn-primary" id="btn-lf-iso">ISO</button></td></tr>
+                </table>                
+            </td>
+            <td class=elise rowspan=2><img src='img/elise_top.svg'></td>
+            <td>
+                <table border=0 class=right>
+                    <tr><td class=loc>Right Front</td></tr>
+                    <tr><td><button type="button" class="btn btn-primary" id="btn-rf-dump">DUMP</button></td></tr>
+                    <tr><td><button type="button" class="btn btn-primary" id="btn-rf-iso">ISO</button></td></tr>
+                </table>          
+            </td>            
+        </tr>    
+        <tr>
+            <td>
+                <table border=0 class=left>
+                    <tr><td class=loc>Left Rear</td></tr>
+                    <tr><td><button type="button" class="btn btn-primary" id="btn-lr-dump">DUMP</button></td></tr>
+                    <tr><td><button type="button" class="btn btn-primary" id="btn-lr-iso">ISO</button></td></tr>
+                </table>                
+            </td>          
+            <td>
+                <table border=0 class=right>
+                    <tr><td class=loc>Right Rear</td></tr>
+                    <tr><td><button type="button" class="btn btn-primary" id="btn-rr-dump">DUMP</button></td></tr>
+                    <tr><td><button type="button" class="btn btn-primary" id="btn-rr-iso">ISO</button></td></tr>
+                </table>          
+            </td>            
+        </tr>
+    </table>
     <p></p>
-    <button type="button" class="btn btn-primary" id="btn-StartCommunication">StartCommunication</button>
+    <p></p>              
     <button type="button" class="btn btn-secondary" id="btn-ReadECUIdentification">ReadECUIdentification</button>
     <p></p>      
     <button type="button" class="btn btn-primary" id="btn-ReadDataByLocalIdCB-BatteryVoltage">ReadDataByLocalIdCB BatteryVoltage</button>
     <p></p>
-    <button type="button" class="btn btn-primary" id="btn-ReadDataByLocalIdCB-SpeedFL">ReadDataByLocalIdCB SpeedFL</button>
-    <button type="button" class="btn btn-primary" id="btn-ReadDataByLocalIdCB-SpeedFR">ReadDataByLocalIdCB SpeedFR</button>
+    <button type="button" class="btn btn-primary" id="btn-ReadDiagnosticTroubleCodesByStatus">ReadDiagnosticTroubleCodesByStatus</button>  
     <p></p>
-    
+    <button type="button" class="btn btn-primary" id="btn-ClearDiagnosticInformationService">ClearDiagnosticInformationService</button>  
+    <p></p>
+        
     <script>
         $(document).ready(function() {
             $("#btn-StartCommunication").on("click", function(e) {
@@ -95,11 +150,11 @@
                 });
             });
             // ------------------------------------------------
-               $("#btn-ReadDataByLocalIdCB-SpeedFL").on("click", function(e) {
+               $("#btn-ReadDiagnosticTroubleCodesByStatus").on("click", function(e) {
                 e.preventDefault();
                 $.ajax({type: "GET",
-                    url: "/ReadDataByLocalId?record=49",
-                    data: { id: $(this).val() },
+                    url: "/ReadDiagnosticTroubleCodesByStatus",
+                    // data: { id: $(this).val() },
                     success:function(result) {
                         //  alert('ok');
                     },
@@ -107,13 +162,13 @@
                         alert('error');
                     }
                 });
-            });
+            });            
             // ------------------------------------------------
-            $("#btn-ReadDataByLocalIdCB-SpeedFR").on("click", function(e) {
+            $("#btn-ClearDiagnosticInformationService").on("click", function(e) {
                 e.preventDefault();
                 $.ajax({type: "GET",
-                    url: "/ReadDataByLocalId?record=50",
-                    data: { id: $(this).val() },
+                    url: "/ClearDiagnosticInformationService",
+                    // data: { id: $(this).val() },
                     success:function(result) {
                         //  alert('ok');
                     },
@@ -121,7 +176,7 @@
                         alert('error');
                     }
                 });
-            });
+            });                   
         });      
     </script>
 </body>
