@@ -21,6 +21,9 @@
 
 
 // list of callbacks
+void TimeoutCB(void);
+void ErrorMessageCB(uint8_t *payload_bytes, uint8_t payload_len);
+void StartCommunicationCB(uint8_t *payload_bytes, uint8_t payload_len);
 void ReadECUIdentificationCB(uint8_t *payload_bytes, uint8_t payload_len);
 void ReadDataByLocalIdCB(uint8_t *payload_bytes, uint8_t payload_len);
 void ReadDiagnosticTroubleCodeByStatusCB(uint8_t *payload_bytes, uint8_t payload_len);

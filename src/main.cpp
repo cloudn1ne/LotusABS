@@ -4,6 +4,7 @@
 #include <TaskScheduler.h>
 #include <stdint.h>
 #include <LittleFS.h>
+#include <ElegantOTA.h>
 
 #include "web.h"
 #include "kwp.h"
@@ -18,8 +19,9 @@
 #define LED_OK  16
 KWP2K ABS(TX, RX);
 
-// AsyncWebServer server(80);
+
 ESP8266WebServer server(80);
+WebSocketsServer ws_server = WebSocketsServer(81);
 
 Scheduler Taskrunner;
 void OKLEDTaskCallback();
@@ -28,6 +30,39 @@ Task OKLEDTask(1000, -1, &OKLEDTaskCallback);
 bool state_ok_led = true;
 
 uint8_t ecu_addr_glob = 0x1;
+
+void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length) 
+{
+    DynamicJsonDocument json(128);
+    switch(type) {
+        case WStype_DISCONNECTED:
+            log_msg("webSocketEvent() [%u] Disconnected!\n", num);
+            break;
+        case WStype_CONNECTED:
+            {
+                IPAddress ip = ws_server.remoteIP(num);
+                log_msg("webSocketEvent() [%u] Connected from %d.%d.%d.%d url: %s\n", num, ip[0], ip[1], ip[2], ip[3], payload);
+                ws_server.sendTXT(num, "Connected");
+            }
+            break;
+        case WStype_TEXT:        
+            log_msg("webSocketEvent() [%u] get Text: %s\n", num, payload);
+            deserializeJson(json, payload);       
+            log_msg("\t Calling SId: %02x", json["sid"].as<int>());     
+            switch (json["sid"].as<int>())          
+            {
+                case KWP_SID_STARTCOMMUNICATION:                  ABS.StartCommunication(); break;
+                case KWP_SID_READECUIDENTIFICATION:               ABS.ReadECUIdentification(json["option"].as<int>()); break;
+                case KWP_SID_READDIAGNOSTICTROUBLECODESBYSTATUS:  ABS.ReadDiagnosticTroubleCodesByStatus(); break;
+                case KWP_SID_CLEARDIAGNOSTICINFORMATIONSERVICE:   ABS.ClearDiagnosticInformationService(); break;
+                default:
+                          log_msg("\n unknown SiD, no function defined ?");
+                          break;
+            }
+            break;        
+    }
+
+}
 
 
 void setup() {
@@ -56,6 +91,8 @@ void setup() {
     Serial.println("unable to init LittleFS");
   }
   server.serveStatic("/", LittleFS, "/www/index.html");
+  server.serveStatic("/valves.html", LittleFS, "/www/valves.html");
+  server.serveStatic("/dtc.html", LittleFS, "/www/dtc.html");
   server.serveStatic("/js", LittleFS, "/www/js");
   server.serveStatic("/img", LittleFS, "/www/img");
   server.serveStatic("/css", LittleFS, "/www/css");
@@ -99,16 +136,23 @@ void setup() {
   server.begin();
 
   // register ABS ECU callbacks
+  ABS.setTimeoutCallback(&TimeoutCB);
+  ABS.setCallback(KWP_SID_ERR, &ErrorMessageCB);
+  ABS.setCallback(KWP_SID_STARTCOMMUNICATION, &StartCommunicationCB);
   ABS.setCallback(KWP_SID_READECUIDENTIFICATION, &ReadECUIdentificationCB);
   ABS.setCallback(KWP_SID_READDATABYLOCALID, &ReadDataByLocalIdCB);
   ABS.setCallback(KWP_SID_READDIAGNOSTICTROUBLECODESBYSTATUS, &ReadDiagnosticTroubleCodeByStatusCB);
   ABS.setCallback(KWP_SID_CLEARDIAGNOSTICINFORMATIONSERVICE, &ClearDiagnosticInformationServiceCB);
-  
+
   // SETUP Pins
   pinMode(LED_OK, OUTPUT);  
   
   // enable Tasks
   OKLEDTask.enable();  
+
+  // enable webSockets
+    ws_server.begin();
+    ws_server.onEvent(webSocketEvent);
 }
 
 void OKLEDTaskCallback()
@@ -127,5 +171,6 @@ void loop() {
  //  AsyncElegantOTA.loop();
   Taskrunner.execute();
   server.handleClient();
+  ws_server.loop();
 }
 

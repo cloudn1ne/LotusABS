@@ -51,14 +51,21 @@ void KWP2K::resetFlags()
     _waiting_for_reply = false;    
 }
 
+void KWP2K::setTimeoutCallback(void (*callback)(void))
+{
+    cb_Timeout = callback;
+}
+
 void KWP2K::setCallback(uint8_t SId, void (*callback)(uint8_t *payload_bytes, uint8_t payload_len))
 {
     switch (SId)
-    {
-        case KWP_SID_READECUIDENTIFICATION:                 cb_ReadECUIdentification=callback; break;
-        case KWP_SID_READDATABYLOCALID:                     cb_ReadDataByLocalId=callback; break;
-        case KWP_SID_READDIAGNOSTICTROUBLECODESBYSTATUS:    cb_ReadDiagnosticTroubleCodesByStatus=callback; break;
-        case KWP_SID_CLEARDIAGNOSTICINFORMATIONSERVICE: cb_ClearDiagnosticInformationService=callback; break;
+    {        
+        case KWP_SID_ERR:                                   cb_ErrorMessage                         = callback; break;
+        case KWP_SID_STARTCOMMUNICATION:                    cb_StartCommunication                   = callback; break;
+        case KWP_SID_READECUIDENTIFICATION:                 cb_ReadECUIdentification                = callback; break;
+        case KWP_SID_READDATABYLOCALID:                     cb_ReadDataByLocalId                    = callback; break;
+        case KWP_SID_READDIAGNOSTICTROUBLECODESBYSTATUS:    cb_ReadDiagnosticTroubleCodesByStatus   = callback; break;
+        case KWP_SID_CLEARDIAGNOSTICINFORMATIONSERVICE:     cb_ClearDiagnosticInformationService    = callback; break;
     }
 }
 
@@ -114,16 +121,16 @@ KWP2KMsg *KWP2K::popTXQueue(void)
 * peek KWP2KMsg in TX queue
 * return: true if some message wants to be send, otherwise false
 */
-bool KWP2K::peekTXQueue(void)
+KWP2KMsg *KWP2K::peekTXQueue(void)
 {  
     uint8_t i;
     
     for (i=0;i<KWP2K_TX_QUEUE_SIZE;i++)
     if (_tx_queue[i] != NULL)
     {
-      return(true);
+      return(_tx_queue[i]);
     }       
-    return(false);   
+    return(NULL);   
 }
 
 //////////////////////////////////////////////
@@ -140,7 +147,7 @@ void KWP2K::process()
         log_msg("KWP2K::process() no longer initialized\n");      
 #endif  
         _is_initialized = false;           // Communication Session no longer initialized
-        _is_communication_started = false; // Communication Session timed out
+        _is_communication_started = false; // Communication Session timed out        
     }            
 
     // we are not waiting for a reply to a previous message and there is a new one to send
@@ -158,8 +165,8 @@ void KWP2K::process()
             this->fastInit();
         }                
         // do we have a comm session
-        if (!_is_communication_started)
-        {
+        if (!_is_communication_started && (this->peekTXQueue()->getSId()!=KWP_SID_STARTCOMMUNICATION))
+        {                        
             msg = this->getStartCommunicationMsg();       // send the StartCommunication message
         }
         else
@@ -173,10 +180,7 @@ void KWP2K::process()
         _waiting_for_reply_timeout = millis();
         _waiting_for_reply = true;
 
-        _msgrx.reset();         // make ready the _msgrx buffer      
-#ifdef DBG_KWP2K
-        log_msg("KWP2K::process() message SENT\n");      
-#endif             
+        _msgrx.reset();         // make ready the _msgrx buffer                
     }
 
     // are we waiting for a reply ?
@@ -188,6 +192,7 @@ void KWP2K::process()
             _waiting_for_reply = false; 
             _is_communication_started = false;
             _is_initialized = false;
+            this->cb_Timeout(); 
             log_msg("WARNING: expected reply timed out\n");
         }
         else
@@ -206,7 +211,10 @@ void KWP2K::process()
     // CS was ok, so the response has been received
     if (_msgrx.getState() == RESPONSE_RECEIVED) 
     {
-        log_msg("RESPONSE RECEIVED SUCCESSFULLY (%d)\n", _msgrx.getPayloadBytesLen());        
+        
+    #ifdef DBG_KWP2K        
+        log_msg(">> RESPONSE RECEIVED for SId=%02x len=%d\n", (_msgrx.getSId()-0x40), _msgrx.getPayloadBytesLen());        
+    #endif
         /*
         uint8_t i;
         uint8_t *payload = _msgrx.getPayloadBytes();        
@@ -219,8 +227,8 @@ void KWP2K::process()
         */
         switch(_msgrx.getSId())
         {
-            case KWP_SID_ERR:                                       log_msg("ERROR Received from ECU"); break;
-            case KWP_SID_STARTCOMMUNICATION_POS:                    log_msg("StartCommunication SUCCESS\n"); _is_communication_started=true; break;
+            case KWP_SID_ERR:                                       log_msg("ERROR Received from ECU"); this->cb_ErrorMessage(_msgrx.getPayloadBytes(), _msgrx.getPayloadBytesLen()); break; 
+            case KWP_SID_STARTCOMMUNICATION_POS:                    log_msg("StartCommunication SUCCESS\n"); _is_communication_started=true; this->cb_StartCommunication(_msgrx.getPayloadBytes(), _msgrx.getPayloadBytesLen()); break;
             case KWP_SID_READECUIDENTIFICATION_POS:                 this->cb_ReadECUIdentification(_msgrx.getPayloadBytes(), _msgrx.getPayloadBytesLen()); break;
             case KWP_SID_READDATABYLOCALID_POS:                     this->cb_ReadDataByLocalId(_msgrx.getPayloadBytes(), _msgrx.getPayloadBytesLen()); break;
             case KWP_SID_READDIAGNOSTICTROUBLECODESBYSTATUS_POS:    this->cb_ReadDiagnosticTroubleCodesByStatus(_msgrx.getPayloadBytes(), _msgrx.getPayloadBytesLen()); break;
@@ -250,6 +258,10 @@ void KWP2K::fastInit()
 }
 
 // Functions
+
+/*
+* Get StartCommunication message (used for auto connect)
+*/
 KWP2KMsg *KWP2K::getStartCommunicationMsg()
 {        
     KWP2KMsg *msg;
@@ -261,6 +273,26 @@ KWP2KMsg *KWP2K::getStartCommunicationMsg()
     msg->setState(QUEUED);
     return(msg);
 }
+
+/*
+* Send StartCommunication message
+*/
+void KWP2K::StartCommunication(void)
+{        
+//    if (!_is_communication_started)
+    //{
+        KWP2KMsg *msg;
+        msg = new KWP2KMsg();
+        msg->setFmt(KWPMSG_HM2, 1);  
+        msg->setSrc(_Testeraddress);  
+        msg->setTgt(_ECUaddress);
+        msg->setSId(KWP_SID_STARTCOMMUNICATION);      
+        msg->setState(QUEUED);
+    // msg->print();     
+        this->pushTXQueue(msg);
+   // }
+}
+
 
 void KWP2K::ReadECUIdentification(uint8_t option)
 {        

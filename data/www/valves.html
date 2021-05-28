@@ -1,0 +1,153 @@
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd"> 
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lotus ABS Tool</title>
+    <style>
+        /* no zoom with doubletouch */
+        * {
+          -ms-touch-action: manipulation;
+          touch-action: manipulation;
+        }
+        table
+        {
+            border-collapse: collapse; /* 'cellspacing' equivalent */
+        }
+        table td, table th
+        {
+            padding: 2; /* 'cellpadding' equivalent */
+        }
+       .header {
+          font-family: "Lucida Console", Courier, monospace;
+          color: black;
+          text-align: center;
+          font-size: 18px;
+        }   
+        .copyr {
+          font-family: "Lucida Console", Courier, monospace;
+          color: black;
+          text-align: right;
+          font-size: 9px;
+        }     
+        .loc {
+          font-family: "Lucida Console", Courier, monospace;
+          color: black;          
+          font-size: 20px;
+        }     
+        .left {
+            text-align: right;
+        }
+        .right {
+            text-align: left;
+        }
+        .elise {                                    
+            width: 100%;            
+        }
+        .tablemax {
+             max-width: 400px;    
+        }
+       
+
+    </style>
+    <script src="js/jquery-3.6.0.min.js"></script>
+    <script src="js/bootstrap.min.js"></script>
+    <link rel="stylesheet" href="css/bootstrap.min.css">
+</head>
+<body>
+    
+ <!-- NAVBAR START -->
+  <nav class="navbar navbar-expand-lg navbar-light bg-light">
+     <a class="navbar-brand" href="#">
+            <table border=0>
+                <tr>
+                    <td>
+                        <img src="img/brake.svg" height=50>
+                    </td>
+                    <td class=header>
+                        Lotus ABS Tool 
+                    </td>            
+                </tr>
+                <tr> 
+                    <td colspan=2 class=copyr>
+                        &copy; v1.0 - &copy; CyberNet 2021
+                    </td>
+                </tr>
+            </table>
+      </a>
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarText" aria-controls="navbarText" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarText">
+        <ul class="navbar-nav mr-auto">
+          <li class="nav-item">
+            <a class="nav-link" href="/">Home</a>
+          </li>
+          <li class="nav-item active">
+            <a class="nav-link" href="valves.html">Valve Control</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="dtc.html">Trouble Codes</a>
+          </li>
+        </ul>
+      </div>
+</nav>
+<!-- NAVBAR END -->
+<center>
+    <table class=tablemax border=0>
+        <tr>
+            <td>
+                <table border=0 class=left>
+                    <tr><td class=loc>Left Front</td></tr>
+                    <tr><td><button type="button" class="btn btn-primary" id="btn-lf-dump">DUMP</button></td></tr>
+                    <tr><td><button type="button" class="btn btn-primary" id="btn-lf-iso">ISO</button></td></tr>
+                </table>                
+            </td>
+            <td class=elise rowspan=2><img src='img/elise_top.svg'></td>
+            <td>
+                <table border=0 class=right>
+                    <tr><td class=loc>Right Front</td></tr>
+                    <tr><td><button type="button" class="btn btn-primary" id="btn-rf-dump">DUMP</button></td></tr>
+                    <tr><td><button type="button" class="btn btn-primary" id="btn-rf-iso">ISO</button></td></tr>
+                </table>          
+            </td>            
+        </tr>    
+        <tr>
+            <td>
+                <table border=0 class=left>
+                    <tr><td class=loc>Left Rear</td></tr>
+                    <tr><td><button type="button" class="btn btn-primary" id="btn-lr-dump">DUMP</button></td></tr>
+                    <tr><td><button type="button" class="btn btn-primary" id="btn-lr-iso">ISO</button></td></tr>
+                </table>                
+            </td>     
+            <td>
+                <table border=0 class=right>
+                    <tr><td class=loc>Right Rear</td></tr>
+                    <tr><td><button type="button" class="btn btn-primary" id="btn-rr-dump">DUMP</button></td></tr>
+                    <tr><td><button type="button" class="btn btn-primary" id="btn-rr-iso">ISO</button></td></tr>
+                </table>          
+            </td>            
+        </tr>
+    </table>
+</center>
+  
+    <script>
+        $(document).ready(function() {
+            $("#btn-StartCommunication").on("click", function(e) {
+                e.preventDefault();
+                $.ajax({type: "GET",
+                    url: "/StartCommunication",
+                    data: { id: $(this).val() },
+                    success:function(result) {
+                        //  alert('ok');
+                    },
+                    error:function(result) {
+                        alert('error');
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>

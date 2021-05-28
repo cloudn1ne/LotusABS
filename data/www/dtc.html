@@ -37,6 +37,9 @@
         .right {
             text-align: left;
         }
+        .mono { 
+            font-family: monospace; 
+        }
    
 
     </style>
@@ -84,6 +87,7 @@
         </div>
     </nav>
     <!-- NAVBAR END -->   
+
     <!-- TimeoutModal -->
     <div class="modal" id="TimeoutModal" tabindex="-1" role="dialog" aria-labelledby="TimeoutModalLabel">
         <div class="modal-dialog" role="document">
@@ -123,75 +127,57 @@
     </div>
     <!-- StartCommunicationModal END -->
 
-    <!-- ReadECUIdentification -->
+    <!-- ReadDiagnosticTroubleCodeByStatus -->
     <div class="card">
         <div class="card-body">
-          <h5 class="card-title">ECU Identification</h5>
-          <div class="container ">            
-            <div class="row">
-                <div class="col-6 col-sm-4 text-right">Design Code:</div>
-                <div class="col-6 col-sm-4 font-weight-bold"><span id='ecu_design_code'>-</span></div>
-            </div>
-            <div class="row">
-                <div class="col-6 col-sm-4 text-right">Hardware ID:</div>
-                <div class="col-6 col-sm-4 font-weight-bold"><span id='ecu_id_hardware'>-</span></div>
-            </div>
-            <div class="row">
-                <div class="col-6 col-sm-4 text-right">Software ID:</div>
-                <div class="col-6 col-sm-4 font-weight-bold"><span id='ecu_id_software'>-</span></div>
-            </div>
-            <div class="row">
-                <div class="col-6 col-sm-4 text-right">Date:</div>
-                <div class="col-6 col-sm-4 font-weight-bold"><span id='ecu_id_date'>-/-/-</span> (Y/M/D)</div>
-            </div>
-          </div>               
+          <h5 class="card-title">Pending DTCs</h5>          
         </div>
+        <div class="container" id="dtccontainer">               
+            <!-- DTCs go here -->            
+        </div>                     
+        <p></p>
+        <button type="button" class="btn btn-success" id="btn-ClearDiagnosticInformationService" onClick="req_ClearDiagnosticInformationService();">Clear DTCs</button>  
     </div>
-    <!-- ReadECUIdentification END -->
+    <!-- ReadDiagnosticTroubleCodeByStatus END -->
 
-    <p></p>
-    <button type="button" class="btn btn-secondary" id="btn-StartCommunication">StartCommunication</button>
-    <p></p>              
-    <button type="button" class="btn btn-secondary" id="btn-ReadECUIdentification">ReadECUIdentification</button>
-    <p></p>      
-    <button type="button" class="btn btn-primary" id="btn-ReadDataByLocalIdCB-BatteryVoltage">ReadDataByLocalIdCB BatteryVoltage</button>
-    <p></p>
-    <button type="button" class="btn btn-primary" id="btn-ReadDiagnosticTroubleCodesByStatus">ReadDiagnosticTroubleCodesByStatus</button>  
-    <p></p>
-    <button type="button" class="btn btn-primary" id="btn-ClearDiagnosticInformationService">ClearDiagnosticInformationService</button>  
-    <p></p>
         
     <script>
-        var ws;
-       
-              
+        var ws;            
+               
         function resp_StartCommunication(data)
         {            
             console.log("resp_StartCommunication()");
             console.log(data);
             var pval=50;
             $('#StartCommunicationrogress').css('width', pval+'%').attr('aria-valuenow', pval);
-            $('#StartCommunicationModalTitle').html("Trying to read ECU Identification");            
-            req_ReadECUIdentification();            
-        }
-               
-        function resp_ReadECUIdentification(data)
+            $('#StartCommunicationModalTitle').html("Trying to read DTCs");            
+            req_ReadDiagnosticTroubleCodeByStatus();            
+        }                
+
+        function resp_ReadDiagnosticTroubleCodeByStatus(data)
         {        
-            console.log("resp_ReadECUIdentification()");
+            console.log("resp_ReadDiagnosticTroubleCodeByStatus()");
             console.log(data);
             var pval=100;
 
-            $('#ecu_design_code').html(data.ecu_id_designcode);
-            $('#ecu_id_hardware').html(data.ecu_id_hardware);
-            $('#ecu_id_software').html(data.ecu_id_software);
-            $('#ecu_id_date').html(data.ecu_id_date);
-
+            $('#dtccontainer').empty(); 
+            $.each( data.dtcs, function( idx, dtc ){
+                console.log(dtc);
+                row_html = ' \
+                <div class="row p-2">\
+                    <div class="col-6 col-sm-1 font-weight-bold text-right">\
+                        <button type="button" class="btn btn-outline-danger btn-sm mono">'+dtc.dtc_str+'</button></div>\
+                    <div class="col-6 col-sm-8 pull-right">'+DTCtoString(dtc.dtc_code)+'</div>\
+                </div>';
+                let dtc_row = $('<div>').html(row_html).appendTo("#dtccontainer");
+            });
+             
             $('#StartCommunicationrogress').css('width', pval+'%').attr('aria-valuenow', pval);
-            $('#StartCommunicationModalTitle').html("ECU Identification complete");                        
+            $('#StartCommunicationModalTitle').html("DTC readout complete");                        
             $('#StartCommunicationModal').modal('hide');
         }
-       
-
+      
+        
         $(document).ready(function() {
             
             ws = ebc430_init();
@@ -210,76 +196,14 @@
                         {
                             case KWP_SID_ERR:                   resp_ErrorMessage(data); break;
                             case KWP_SID_STARTCOMMUNICATION:    resp_StartCommunication(data); break;
-                            case KWP_SID_READECUIDENTIFICATION: resp_ReadECUIdentification(data); break;
+                            case KWP_SID_READDIAGNOSTICTROUBLECODESBYSTATUS: resp_ReadDiagnosticTroubleCodeByStatus(data); break;
                         }
                   }
                   catch (e)
                   {
                       console.log("ws.onmessage() JSON.parse error "+e);
                   }                                  
-            }
-
-            $("#btn-StartCommunication").on("click", function(e) {
-                e.preventDefault();
-                req_ReadECUIdentification();
-            });
-
-            // ------------------------------------------------
-            $("#btn-ReadECUIdentification").on("click", function(e) {
-                e.preventDefault();
-                $.ajax({type: "GET",
-                    url: "/ReadECUIdentification",
-                    data: { id: $(this).val() },
-                    success:function(result) {
-                        //  alert('ok');
-                    },
-                    error:function(result) {
-                        alert('error');
-                    }
-                });
-            });
-            // ------------------------------------------------
-            $("#btn-ReadDataByLocalIdCB-BatteryVoltage").on("click", function(e) {
-                e.preventDefault();
-                $.ajax({type: "GET",
-                    url: "/ReadDataByLocalId?record=48",
-                    data: { id: $(this).val() },
-                    success:function(result) {
-                        //  alert('ok');
-                    },
-                    error:function(result) {
-                        alert('error');
-                    }
-                });
-            });
-            // ------------------------------------------------
-               $("#btn-ReadDiagnosticTroubleCodesByStatus").on("click", function(e) {
-                e.preventDefault();
-                $.ajax({type: "GET",
-                    url: "/ReadDiagnosticTroubleCodesByStatus",
-                    // data: { id: $(this).val() },
-                    success:function(result) {
-                        //  alert('ok');
-                    },
-                    error:function(result) {
-                        alert('error');
-                    }
-                });
-            });            
-            // ------------------------------------------------
-            $("#btn-ClearDiagnosticInformationService").on("click", function(e) {
-                e.preventDefault();
-                $.ajax({type: "GET",
-                    url: "/ClearDiagnosticInformationService",
-                    // data: { id: $(this).val() },
-                    success:function(result) {
-                        //  alert('ok');
-                    },
-                    error:function(result) {
-                        alert('error');
-                    }
-                });
-            });                   
+            }                    
         });      
     </script>
 

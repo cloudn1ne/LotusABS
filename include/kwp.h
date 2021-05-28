@@ -98,7 +98,9 @@ class KWP2K
         KWP2KMsg *getStartCommunicationMsg();
         void process(void);          
         void setCallback(uint8_t SId, void (*callback)(uint8_t *payload_bytes, uint8_t payload_len));
+        void setTimeoutCallback(void (*callback)(void));
         // ECU Functions
+        void StartCommunication(void);
         void ReadECUIdentification(uint8_t option);
         void ReadDataByLocalId(uint8_t record);        
         void ReadDiagnosticTroubleCodesByStatus(void);
@@ -111,8 +113,11 @@ class KWP2K
         void sendMsg(KWP2KMsg *msg);
         bool pushTXQueue(KWP2KMsg *msg);
         KWP2KMsg *popTXQueue(void);
-        bool peekTXQueue(void);
-            
+        KWP2KMsg *peekTXQueue(void);
+
+        void (*cb_Timeout)(void);                            
+        void (*cb_ErrorMessage)(uint8_t *payload_bytes, uint8_t payload_len);        
+        void (*cb_StartCommunication)(uint8_t *payload_bytes, uint8_t payload_len);
         void (*cb_ReadECUIdentification)(uint8_t *payload_bytes, uint8_t payload_len);
         void (*cb_ReadDataByLocalId)(uint8_t *payload_bytes, uint8_t payload_len);
         void (*cb_ReadDiagnosticTroubleCodesByStatus)(uint8_t *payload_bytes, uint8_t payload_len);
