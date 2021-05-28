@@ -151,6 +151,7 @@ void OKLEDTaskCallback()
 #ifdef DBG_TASKS
   log_msg("OKLEDTaskCallback()\n");
 #endif  
+  // not that useful, but everybody likes blinkenlights ;)
   digitalWrite(LED_OK, state_ok_led);
   state_ok_led = !state_ok_led;
 }

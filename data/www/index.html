@@ -159,7 +159,11 @@
         </div>
     </div>
     <!-- ReadDataByLocalId / BatteryVoltage END -->
-    
+    <!-- ErrorMessage Alert -->
+    <div class="alert alert-warning" role="alert" id="errormessage" style="display:none;">
+        <span id='errormessage_text'></span>
+    </div>
+    <!-- ErrorMessage Alert END -->    
 
     <script>
         var ws;
@@ -167,8 +171,7 @@
               
         function resp_StartCommunication(data)
         {            
-            console.log("resp_StartCommunication()");
-            console.log(data);
+            // console.log("resp_StartCommunication()");           
             var pval=50;
             $('#StartCommunicationrogress').css('width', pval+'%').attr('aria-valuenow', pval);
             $('#StartCommunicationModalTitle').html("Trying to read ECU Identification");            
@@ -178,8 +181,8 @@
                
         function resp_ReadECUIdentification(data)
         {        
-            console.log("resp_ReadECUIdentification()");
-            console.log(data);
+           // console.log("resp_ReadECUIdentification()");
+           // console.log(data);
             var pval=100;
 
             $('#ecu_design_code').html(data.ecu_id_designcode);
@@ -194,8 +197,8 @@
        
         function resp_ReadDataByLocalId(data)
         {
-            console.log("resp_ReadDataByLocalId()");
-            console.log(data);
+           // console.log("resp_ReadDataByLocalId()");
+           // console.log(data);
             $('#batvoltage').text(data.value);
         }
 
@@ -217,8 +220,8 @@
             }
 
             ws.onmessage = function (event) {
-                  console.log("ws.onmessage()");
-                  console.log(event.data);
+                 // console.log("ws.onmessage()");
+                 // console.log(event.data);
                   try {
                         data = JSON.parse(event.data);
                         console.log("SId="+data.sid);                        

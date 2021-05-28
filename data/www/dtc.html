@@ -139,7 +139,11 @@
         <button type="button" class="btn btn-success" id="btn-ClearDiagnosticInformationService" onClick="req_ClearDiagnosticInformationService();">Clear DTCs</button>  
     </div>
     <!-- ReadDiagnosticTroubleCodeByStatus END -->
-
+    <!-- ErrorMessage Alert -->
+    <div class="alert alert-warning" role="alert" id="errormessage" style="display:none;">
+        <span id='errormessage_text'></span>
+    </div>
+    <!-- ErrorMessage Alert END -->    
         
     <script>
         var ws;        

@@ -95,6 +95,44 @@
       </div>
 </nav>
 <!-- NAVBAR END -->
+ <!-- TimeoutModal -->
+ <div class="modal" id="TimeoutModal" tabindex="-1" role="dialog" aria-labelledby="TimeoutModalLabel">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="TimeoutModalTitle">Timeout connecting to ECU</h5>            
+            </div>
+            <div class="modal-body">
+                Make sure your ignition is on.<p></p>
+                It is not required for the engine to be running.                                
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Okay</button>          
+            </div>
+        </div>
+    </div>
+</div>
+<!-- TimeoutModal END -->
+
+<!-- StartCommunicationModal -->
+<div class="modal" id="StartCommunicationModal" tabindex="-1" role="dialog" aria-labelledby="StartCommunicationModalLabel">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="StartCommunicationModalTitle">Connecting to ECU</h5>            
+            </div>
+            <div class="modal-body">
+                <div class="progress">
+                    <div id="StartCommunicationrogress" class="progress-bar progress-bar-striped" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">Abort</button>          
+            </div>
+        </div>
+    </div>
+</div>
+<!-- StartCommunicationModal END -->
 <center>
     <table class=tablemax border=0>
         <tr>
@@ -161,7 +199,7 @@
                         //console.log("resp_StartCommunication()");                       
                         var pval=50;
                         $('#StartCommunicationrogress').css('width', pval+'%').attr('aria-valuenow', pval);
-                        $('#StartCommunicationModalTitle').html("Reading IO states");            
+                        $('#StartCommunicationModalTitle').html("Reading IO states");                                    
                         req_ReadAllStates();                 
                 }                
        
