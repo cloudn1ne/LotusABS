@@ -66,6 +66,7 @@ void KWP2K::setCallback(uint8_t SId, void (*callback)(uint8_t *payload_bytes, ui
         case KWP_SID_READDATABYLOCALID:                     cb_ReadDataByLocalId                    = callback; break;
         case KWP_SID_READDIAGNOSTICTROUBLECODESBYSTATUS:    cb_ReadDiagnosticTroubleCodesByStatus   = callback; break;
         case KWP_SID_CLEARDIAGNOSTICINFORMATIONSERVICE:     cb_ClearDiagnosticInformationService    = callback; break;
+        case KWP_SID_INPUTOUTPUTCONTROLBYLOCALID:           cb_InputOutputControlByLocalId          = callback; break;
     }
 }
 
@@ -227,12 +228,13 @@ void KWP2K::process()
         */
         switch(_msgrx.getSId())
         {
-            case KWP_SID_ERR:                                       log_msg("ERROR Received from ECU"); this->cb_ErrorMessage(_msgrx.getPayloadBytes(), _msgrx.getPayloadBytesLen()); break; 
-            case KWP_SID_STARTCOMMUNICATION_POS:                    log_msg("StartCommunication SUCCESS\n"); _is_communication_started=true; this->cb_StartCommunication(_msgrx.getPayloadBytes(), _msgrx.getPayloadBytesLen()); break;
+            case KWP_SID_ERR:                                       this->cb_ErrorMessage(_msgrx.getPayloadBytes(), _msgrx.getPayloadBytesLen()); break; 
+            case KWP_SID_STARTCOMMUNICATION_POS:                    _is_communication_started=true; this->cb_StartCommunication(_msgrx.getPayloadBytes(), _msgrx.getPayloadBytesLen()); break;
             case KWP_SID_READECUIDENTIFICATION_POS:                 this->cb_ReadECUIdentification(_msgrx.getPayloadBytes(), _msgrx.getPayloadBytesLen()); break;
             case KWP_SID_READDATABYLOCALID_POS:                     this->cb_ReadDataByLocalId(_msgrx.getPayloadBytes(), _msgrx.getPayloadBytesLen()); break;
             case KWP_SID_READDIAGNOSTICTROUBLECODESBYSTATUS_POS:    this->cb_ReadDiagnosticTroubleCodesByStatus(_msgrx.getPayloadBytes(), _msgrx.getPayloadBytesLen()); break;
             case KWP_SID_CLEARDIAGNOSTICINFORMATIONSERVICE_POS:     this->cb_ClearDiagnosticInformationService(_msgrx.getPayloadBytes(), _msgrx.getPayloadBytesLen()); break;
+            case KWP_SID_INPUTOUTPUTCONTROLBYLOCALID_POS:           this->cb_InputOutputControlByLocalId(_msgrx.getPayloadBytes(), _msgrx.getPayloadBytesLen()); break;
         }                
         _waiting_for_reply = false;
         _msgrx.setState(IDLE);
@@ -308,17 +310,25 @@ void KWP2K::ReadECUIdentification(uint8_t option)
     this->pushTXQueue(msg);
 }
 
-void KWP2K::ReadDataByLocalId(uint8_t record)
+void KWP2K::ReadDataByLocalId(uint8_t record, uint16_t dtc)
 {        
     KWP2KMsg *msg;
     msg = new KWP2KMsg();
-    msg->setFmt(KWPMSG_HM2, 2);  
+    if (record == 0x10)  
+        msg->setFmt(KWPMSG_HM2, 4);  
+    else
+        msg->setFmt(KWPMSG_HM2, 2);      
     msg->setSrc(_Testeraddress);  
     msg->setTgt(_ECUaddress);
     msg->setSId(KWP_SID_READDATABYLOCALID); 
     msg->setData(0, record);  
+    if (record == 0x10)                 // Local Identifier == 0x10 ?
+    {
+        msg->setData(1, dtc>>8);        // DTC Highbyte
+        msg->setData(2, dtc&0xFF);      // DTC Lowbyte
+    }
     msg->setState(QUEUED);
-   // msg->print();     
+    // msg->print();     
     this->pushTXQueue(msg);
 }
 
@@ -350,6 +360,29 @@ void KWP2K::ClearDiagnosticInformationService(void)
     msg->setData(1, 0x0);     // Group (0xFF00) Lowbyte
     msg->setState(QUEUED);
    // msg->print();     
+    this->pushTXQueue(msg);
+}
+
+void KWP2K::InputOutputControlByLocalId(uint8_t id, uint8_t ctrl_param, uint8_t ctrl_state)
+{
+    KWP2KMsg *msg;
+    msg = new KWP2KMsg();
+    if (ctrl_param == 0x7)
+        msg->setFmt(KWPMSG_HM2, 4);  
+    else
+        msg->setFmt(KWPMSG_HM2, 3);  
+
+    msg->setSrc(_Testeraddress);  
+    msg->setTgt(_ECUaddress);
+    msg->setSId(KWP_SID_INPUTOUTPUTCONTROLBYLOCALID);     
+    msg->setData(0, id);       
+    msg->setData(1, ctrl_param);     
+    if (ctrl_param == 0x7)
+    {
+        msg->setData(2, ctrl_state);     
+    }
+    msg->setState(QUEUED);
+    // msg->print();     
     this->pushTXQueue(msg);
 }
 

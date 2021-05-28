@@ -36,27 +36,39 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
     DynamicJsonDocument json(128);
     switch(type) {
         case WStype_DISCONNECTED:
+#ifdef DBG_WEBSOCKETS                    
             log_msg("webSocketEvent() [%u] Disconnected!\n", num);
+#endif            
             break;
         case WStype_CONNECTED:
             {
                 IPAddress ip = ws_server.remoteIP(num);
+#ifdef DBG_WEBSOCKETS                            
                 log_msg("webSocketEvent() [%u] Connected from %d.%d.%d.%d url: %s\n", num, ip[0], ip[1], ip[2], ip[3], payload);
-                ws_server.sendTXT(num, "Connected");
+#endif                
+      //          ws_server.sendTXT(num, "Connected");
             }
             break;
         case WStype_TEXT:        
+#ifdef DBG_WEBSOCKETS                    
             log_msg("webSocketEvent() [%u] get Text: %s\n", num, payload);
+#endif            
             deserializeJson(json, payload);       
+#ifdef DBG_WEBSOCKETS            
             log_msg("\t Calling SId: %02x", json["sid"].as<int>());     
+#endif            
             switch (json["sid"].as<int>())          
             {
                 case KWP_SID_STARTCOMMUNICATION:                  ABS.StartCommunication(); break;
                 case KWP_SID_READECUIDENTIFICATION:               ABS.ReadECUIdentification(json["option"].as<int>()); break;
                 case KWP_SID_READDIAGNOSTICTROUBLECODESBYSTATUS:  ABS.ReadDiagnosticTroubleCodesByStatus(); break;
                 case KWP_SID_CLEARDIAGNOSTICINFORMATIONSERVICE:   ABS.ClearDiagnosticInformationService(); break;
+                case KWP_SID_READDATABYLOCALID:                   ABS.ReadDataByLocalId(json["record"].as<int>(), json["dtc"].as<int>()); break;
+                case KWP_SID_INPUTOUTPUTCONTROLBYLOCALID:         ABS.InputOutputControlByLocalId(json["id"].as<int>(), json["ctrl_param"].as<int>(), json["ctrl_state"].as<int>()); break;
                 default:
+#ifdef DBG_WEBSOCKETS                            
                           log_msg("\n unknown SiD, no function defined ?");
+#endif                           
                           break;
             }
             break;        
@@ -97,12 +109,6 @@ void setup() {
   server.serveStatic("/img", LittleFS, "/www/img");
   server.serveStatic("/css", LittleFS, "/www/css");
 
-/*
-  server.on("/StartCommunication", HTTP_GET, []() {                     
-      ABS.StartCommunication();    
-      server.send(200, "application/json", "{ \"status\" : true }");
-  });  
-  */
   server.on("/ReadECUIdentification", HTTP_GET, []() {            
       uint8_t option = EBC_OPT_ALL;
       if (server.hasArg("option"))
@@ -113,24 +119,8 @@ void setup() {
       ABS.ReadECUIdentification(option);          
       server.send(200, "application/json", "{ \"status\" : true }");
   });
-  server.on("/ReadDataByLocalId", HTTP_GET, []() {            
-      uint8_t record;
-      if (server.hasArg("record"))
-      {
-          record = server.arg("record").toInt();                                       
-          ABS.ReadDataByLocalId(record);
-      }      
-      server.send(200, "application/json", "{ \"status\" : true }");
-  });
-  server.on("/ReadDiagnosticTroubleCodesByStatus", HTTP_GET, []() {                  
-      ABS.ReadDiagnosticTroubleCodesByStatus();   
-      server.send(200, "application/json", "{ \"status\" : true }");
-  });
-  server.on("/ClearDiagnosticInformationService", HTTP_GET, []() {                  
-      ABS.ClearDiagnosticInformationService();   
-      server.send(200, "application/json", "{ \"status\" : true }");
-  });
-    
+
+
   // AsyncElegantOTA.begin(&server);
   ElegantOTA.begin(&server); 
   server.begin();
@@ -143,6 +133,7 @@ void setup() {
   ABS.setCallback(KWP_SID_READDATABYLOCALID, &ReadDataByLocalIdCB);
   ABS.setCallback(KWP_SID_READDIAGNOSTICTROUBLECODESBYSTATUS, &ReadDiagnosticTroubleCodeByStatusCB);
   ABS.setCallback(KWP_SID_CLEARDIAGNOSTICINFORMATIONSERVICE, &ClearDiagnosticInformationServiceCB);
+  ABS.setCallback(KWP_SID_INPUTOUTPUTCONTROLBYLOCALID, &InputOutputControlByLocalIdCB);
 
   // SETUP Pins
   pinMode(LED_OK, OUTPUT);  

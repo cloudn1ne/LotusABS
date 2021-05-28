@@ -14,6 +14,7 @@
 #include <WebSocketsServer.h>
 #include <ArduinoJson.h>
 
+// #define DBG_WEBSOCKETS 1
 extern ESP8266WebServer server;
 extern WebSocketsServer ws_server;
 

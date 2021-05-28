@@ -111,10 +111,16 @@ void ReadDataByLocalIdCB(uint8_t *payload_bytes, uint8_t payload_len)
 #ifdef DBG_EBC430    
     log_msg("ReadDataByLocalIdCB(record=%02x)\n", payload_bytes[1]);
 #endif    
+
+ 
+    DynamicJsonDocument doc(128);         
+    doc["sid"] = String(payload_bytes[0]-0x40);         // response SId-0x40 = request SId
+    doc["record"] = payload_bytes[1];    
+
     uint8_t record = payload_bytes[1];
     switch (record)
     {
-        case EBC_REC_VOLTAGE:   ecu_voltage = (float)(payload_bytes[2]*0.1); break;
+        case EBC_REC_VOLTAGE:   ecu_voltage = (float)(payload_bytes[2]*0.1); doc["value"]=String(ecu_voltage); break;
         case EBC_REC_SPEED_FL:  speed_fl = (float)(((payload_bytes[2]<<8)+payload_bytes[1])/256); break;
         case EBC_REC_SPEED_FR:  speed_fr = (float)(((payload_bytes[2]<<8)+payload_bytes[1])/256); break;
         case EBC_REC_SPEED_RL:  speed_rl = (float)(((payload_bytes[2]<<8)+payload_bytes[1])/256); break;
@@ -125,6 +131,11 @@ void ReadDataByLocalIdCB(uint8_t *payload_bytes, uint8_t payload_len)
     log_msg("Speeds Front: %3.1f kph   %3.1 kph\n", speed_fl, speed_fr);    
     log_msg(" Speeds Rear: %3.1f kph   %3.1 kph\n", speed_rl, speed_rr);    
 #endif      
+
+    // Send the object as a JSON-formatted string.    
+    String json_string;
+    serializeJson(doc, json_string);
+    ws_server.broadcastTXT(json_string);
 }
 
 void ReadDiagnosticTroubleCodeByStatusCB(uint8_t *payload_bytes, uint8_t payload_len)
@@ -173,19 +184,9 @@ void ReadDiagnosticTroubleCodeByStatusCB(uint8_t *payload_bytes, uint8_t payload
         single_dtc["dtc_code"] = dtc_code;
         single_dtc["dtc_type_char"] = dtc_type_char;
         single_dtc["dtc_str"] = dtc_str;
-        single_dtc["dtc_status"] = dtc_status;        
-        // dtc_array.add(single_dtc);      // append to json dtc array
-        
-        // Send the object as a JSON-formatted string.    
-        /*
-        String json_string;
-        serializeJson(doc, json_string);
-        ws_server.broadcastTXT(json_string);
-        */
+        single_dtc["dtc_status"] = dtc_status;              
     }
 
-  
- 
     // Send the object as a JSON-formatted string.    
     String json_string;
     serializeJson(doc, json_string);
@@ -202,4 +203,28 @@ void ClearDiagnosticInformationServiceCB(uint8_t *payload_bytes, uint8_t payload
 #ifdef DBG_EBC430    
     log_msg("ClearDiagnosticInformationServiceCB()\n");    
 #endif    
+}
+
+void InputOutputControlByLocalIdCB(uint8_t *payload_bytes, uint8_t payload_len)
+{
+#ifdef DBG_EBC430    
+    log_msg("InputOutputControlByLocalIdCB(id=%02x ctrl_param=%02x)\n", payload_bytes[1], payload_bytes[2]);    
+#endif    
+
+
+    DynamicJsonDocument doc(128);
+    doc["sid"] =  String(payload_bytes[0]-0x40);          // negative response is always 0x7F    
+
+    doc["id"] = String(payload_bytes[1]);    // the SId that was called for which the error is now shown
+    doc["ctrl_param"] = String(payload_bytes[2]);     // Control Parameter
+    if (payload_bytes[2] == 0x1)
+    {
+        doc["ctrl_state"] = String(payload_bytes[3]);     // Control State (only present if param is 0x1 = return current status)
+    }
+    
+    // Send the object as a JSON-formatted string.    
+    String json_string;
+    serializeJson(doc, json_string);
+    ws_server.broadcastTXT(json_string);
+
 }

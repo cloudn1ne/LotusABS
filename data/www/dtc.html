@@ -142,8 +142,9 @@
 
         
     <script>
-        var ws;            
-               
+        var ws;        
+        const DEFAULT_POLLING_INTERVAL = 2500;
+
         function resp_StartCommunication(data)
         {            
             console.log("resp_StartCommunication()");
@@ -163,11 +164,22 @@
             $('#dtccontainer').empty(); 
             $.each( data.dtcs, function( idx, dtc ){
                 console.log(dtc);
+
+                cause = DTCStatusToCause(dtc.dtc_status);
+                if (DTCStatusToMIL(dtc.dtc_status))
+                    mil = '<button type="button" class="btn btn-warning btn-sm mono">MIL</button>';
+                else
+                    mil = ''
+                
+                complete = DTCStatusToTestComplete(dtc.dtc_status);
+                stored = DTCStatusToStorageStatus(dtc.dtc_status);
+
                 row_html = ' \
                 <div class="row p-2">\
-                    <div class="col-6 col-sm-1 font-weight-bold text-right">\
+                    <div class="col-6 col-sm-2 font-weight-bold text-right">\
+                        '+mil+'\
                         <button type="button" class="btn btn-outline-danger btn-sm mono">'+dtc.dtc_str+'</button></div>\
-                    <div class="col-6 col-sm-8 pull-right">'+DTCtoString(dtc.dtc_code)+'</div>\
+                    <div class="col-6 col-sm-8 pull-right">'+DTCtoString(dtc.dtc_code)+'<p class="font-italic">'+cause+'</p></div>\
                 </div>';
                 let dtc_row = $('<div>').html(row_html).appendTo("#dtccontainer");
             });
@@ -177,13 +189,23 @@
             $('#StartCommunicationModal').modal('hide');
         }
       
-        
+
         $(document).ready(function() {
             
             ws = ebc430_init();
+            var interval_refresh;
 
             ws.onopen  = function (event) {
                 req_StartCommunication();
+
+                interval_refresh = window.setInterval(function(){                    
+                    req_ReadDiagnosticTroubleCodeByStatus();  // Update DTC List
+                }, DEFAULT_POLLING_INTERVAL);
+            }
+
+            ws.onclose = function(event) {
+                console.log("ws.onclose");
+                clearInterval(interval_refresh);
             }
 
             ws.onmessage = function (event) {

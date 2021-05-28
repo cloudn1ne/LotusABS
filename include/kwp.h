@@ -7,7 +7,7 @@
 #include <stdint.h>
 
 
-#define DBG_KWP2K  1
+// #define DBG_KWP2K  1
 
 #define KWP_SID_STARTCOMMUNICATION          0x81
 #define KWP_SID_STARTCOMMUNICATION_POS      0x81+0x40
@@ -23,6 +23,10 @@
 
 #define KWP_SID_CLEARDIAGNOSTICINFORMATIONSERVICE       0x14
 #define KWP_SID_CLEARDIAGNOSTICINFORMATIONSERVICE_POS   0x14+0x40
+
+#define KWP_SID_INPUTOUTPUTCONTROLBYLOCALID 0x30
+#define KWP_SID_INPUTOUTPUTCONTROLBYLOCALID_POS 0x30+0x40
+
 
 #define KWP_SID_ERR                         0x7F
 
@@ -102,9 +106,10 @@ class KWP2K
         // ECU Functions
         void StartCommunication(void);
         void ReadECUIdentification(uint8_t option);
-        void ReadDataByLocalId(uint8_t record);        
+        void ReadDataByLocalId(uint8_t record, uint16_t dtc);        
         void ReadDiagnosticTroubleCodesByStatus(void);
         void ClearDiagnosticInformationService(void);
+        void InputOutputControlByLocalId(uint8_t id, uint8_t ctrl_param, uint8_t ctrl_state);
         
 
     private:
@@ -122,6 +127,7 @@ class KWP2K
         void (*cb_ReadDataByLocalId)(uint8_t *payload_bytes, uint8_t payload_len);
         void (*cb_ReadDiagnosticTroubleCodesByStatus)(uint8_t *payload_bytes, uint8_t payload_len);
         void (*cb_ClearDiagnosticInformationService)(uint8_t *payload_bytes, uint8_t payload_len);
+        void (*cb_InputOutputControlByLocalId)(uint8_t *payload_bytes, uint8_t payload_len);
         
 
         // Serial Port

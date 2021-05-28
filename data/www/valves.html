@@ -53,6 +53,7 @@
     </style>
     <script src="js/jquery-3.6.0.min.js"></script>
     <script src="js/bootstrap.min.js"></script>
+    <script src="js/ebc430.js"></script>
     <link rel="stylesheet" href="css/bootstrap.min.css">
 </head>
 <body>
@@ -100,16 +101,16 @@
             <td>
                 <table border=0 class=left>
                     <tr><td class=loc>Left Front</td></tr>
-                    <tr><td><button type="button" class="btn btn-primary" id="btn-lf-dump">DUMP</button></td></tr>
-                    <tr><td><button type="button" class="btn btn-primary" id="btn-lf-iso">ISO</button></td></tr>
+                    <tr><td><button href="#" type="button" class="btn btn-outline-dark" id="btn-lf-dump" onClick="toggleValve(IO_LF_DUMP);">DUMP</button></td></tr>
+                    <tr><td><button href="#" type="button" class="btn btn-outline-dark" id="btn-lf-iso" onClick="toggleValve(IO_LF_ISO);">ISO</button></td></tr>
                 </table>                
             </td>
             <td class=elise rowspan=2><img src='img/elise_top.svg'></td>
             <td>
                 <table border=0 class=right>
                     <tr><td class=loc>Right Front</td></tr>
-                    <tr><td><button type="button" class="btn btn-primary" id="btn-rf-dump">DUMP</button></td></tr>
-                    <tr><td><button type="button" class="btn btn-primary" id="btn-rf-iso">ISO</button></td></tr>
+                    <tr><td><button href="#" type="button" class="btn btn-outline-dark" id="btn-rf-dump" onClick="toggleValve(IO_RF_DUMP);">DUMP</button></td></tr>
+                    <tr><td><button href="#" type="button" class="btn btn-outline-dark" id="btn-rf-iso" onClick="toggleValve(IO_RF_ISO);">ISO</button></td></tr>
                 </table>          
             </td>            
         </tr>    
@@ -117,37 +118,225 @@
             <td>
                 <table border=0 class=left>
                     <tr><td class=loc>Left Rear</td></tr>
-                    <tr><td><button type="button" class="btn btn-primary" id="btn-lr-dump">DUMP</button></td></tr>
-                    <tr><td><button type="button" class="btn btn-primary" id="btn-lr-iso">ISO</button></td></tr>
+                    <tr><td><button href="#" type="button" class="btn btn-outline-dark" id="btn-lr-dump" onClick="toggleValve(IO_LR_DUMP);">DUMP</button></td></tr>
+                    <tr><td><button href="#" type="button" class="btn btn-outline-dark" id="btn-lr-iso" onClick="toggleValve(IO_LR_ISO);">ISO</button></td></tr>
                 </table>                
             </td>     
             <td>
                 <table border=0 class=right>
                     <tr><td class=loc>Right Rear</td></tr>
-                    <tr><td><button type="button" class="btn btn-primary" id="btn-rr-dump">DUMP</button></td></tr>
-                    <tr><td><button type="button" class="btn btn-primary" id="btn-rr-iso">ISO</button></td></tr>
+                    <tr><td><button href="#" type="button" class="btn btn-outline-dark" id="btn-rr-dump" onClick="toggleValve(IO_RR_DUMP);">DUMP</button></td></tr>
+                    <tr><td><button href="#" type="button" class="btn btn-outline-dark" id="btn-rr-iso" onClick="toggleValve(IO_RR_ISO);">ISO</button></td></tr>
                 </table>          
             </td>            
         </tr>
     </table>
 </center>
-  
+    <!-- ErrorMessage Alert -->
+    <div class="alert alert-warning" role="alert" id="errormessage" style="display:none;">
+        <span id='errormessage_text'></span>
+    </div>
+    <!-- ErrorMessage Alert END -->    
+    <p></p>
+    <div class="ml-4">
+        <button type="button" class="btn btn-outline-dark" id="btn-pump" onClick="togglePUMP();">PUMP Motor</button>
+        <p></p>    
+        <button type="button" class="btn btn-success" id="btn-ClearDiagnosticInformationService" onClick="req_InputOutputControlByLocalId(IO_RELAY, OP_WRITE, ON);">Valve Relay ON</button>      
+        <button type="button" class="btn btn-danger" id="btn-ClearDiagnosticInformationService" onClick="req_InputOutputControlByLocalId(IO_RELAY, OP_WRITE, OFF);">Valve Relay OFF</button>  
+        <p></p>
+        <small>
+            If a ISO valve is activated for more then 60sec, or a DUMP valve for more than 15s, the time-out is activated,<br>the valves are automatically deactivated and at each activation attempt the control unit responds with a negative response. The time-out is reset after 60 s
+        </small>
+    </div>
     <script>
+                var ws;        
+                var valve_states = 0x0         // bitmask for all 8 valves
+                var pump_state = 0x0;          // 1=on, 0=off
+                var relay_state = 0x0;         // 1=on, 0=off
+                var warning_lamp_state = 0x0;    
+                const DEFAULT_POLLING_INTERVAL = 2500;
+
+                function resp_StartCommunication(data)
+                {            
+                        //console.log("resp_StartCommunication()");                       
+                        var pval=50;
+                        $('#StartCommunicationrogress').css('width', pval+'%').attr('aria-valuenow', pval);
+                        $('#StartCommunicationModalTitle').html("Reading IO states");            
+                        req_ReadAllStates();                 
+                }                
+       
+                function resp_InputOutputControlByLocalId(data)
+                {        
+                        console.log("resp_InputOutputControlByLocalId(ctrl_param="+data.ctrl_param+" ctrl_state="+data.ctrl_state+")");
+                      //  console.log(data);                          
+                        if (data.ctrl_param == OP_READ)
+                        {
+                            // valve status via bitmask
+                            if (data.id == IO_ALL_VALVES)
+                            {
+                                valve_states = data.ctrl_state;
+                                for (i=0;i<8;i++)
+                                {
+                                    let test = (1<<i);
+                                    // console.log(test);
+
+                                    if ((data.ctrl_state & test) == test) setValveStatusON(i);
+                                    else setValveStatusOFF(i);
+                                }
+                            }
+                            // pump motor status
+                            if (data.id == IO_PUMP_MOTOR)    
+                            {                                
+                                if (data.ctrl_state == 1)                    
+                                    $("#btn-pump").addClass('btn-success').removeClass('btn-outline-dark');
+                                else
+                                    $("#btn-pump").addClass('btn-outline-dark').removeClass('btn-success');                                    
+                                pump_state = data.ctrl_state;
+                            }
+                            // relay status
+                            if (data.id == IO_RELAY)  
+                            {
+                                if (data.ctrl_state == 1)                    
+                                    $("#btn-relay").addClass('btn-success').removeClass('btn-outline-dark');
+                                else
+                                    $("#btn-relay").addClass('btn-outline-dark').removeClass('btn-success');                                                                                          
+                                relay_state = data.ctrl_state;
+                            }                            
+                        }
+                        // after an confirmed write we update the status
+                        if (data.ctrl_param == OP_WRITE)
+                        {
+                            if ((data.id >= IO_LF_DUMP) && (data.id <= IO_RR_ISO))
+                                 req_InputOutputControlByLocalId(IO_ALL_VALVES, OP_READ);
+                            if (data.id == IO_PUMP_MOTOR)    
+                            {
+                                sleep(300);
+                                req_InputOutputControlByLocalId(IO_PUMP_MOTOR, OP_READ);              
+                            }
+                            if (data.id == IO_RELAY)    
+                                req_InputOutputControlByLocalId(IO_RELAY, OP_READ);       
+                        }
+                }
+
+                function req_ReadAllStates()
+                {
+                        req_InputOutputControlByLocalId(IO_ALL_VALVES, OP_READ);
+                        //req_InputOutputControlByLocalId(IO_PUMP_MOTOR, OP_READ);
+                        //req_InputOutputControlByLocalId(IO_RELAY, OP_READ);                        
+                }
+
+                function setValveStatusON(valve_bit)
+                {                 
+                        let name = ValveBitToName(valve_bit);                           
+                        if (name)
+                            $("#btn-"+name).addClass('btn-success').removeClass('btn-outline-dark');
+                }
+
+                function setValveStatusOFF(valve_bit)
+                {                        
+                        let name = ValveBitToName(valve_bit);                                        
+                        if (name)
+                            $("#btn-"+name).addClass('btn-outline-dark').removeClass('btn-success');
+                }
+
+                function toggleValve(valve_id)
+                {                    
+                        valve_bit = ValveIDToBit(valve_id);
+                        console.log("toggleValve(id="+valve_id+" bit="+valve_bit+")");
+                        if (valve_states>>valve_bit)   
+                        {
+                            console.log("=====> VALVE OFF requested");
+                            req_InputOutputControlByLocalId(valve_id, OP_WRITE, OFF); // valve currently enabled - send OFF                        
+                        }
+                        else
+                        {
+                            console.log("=====> VALVE ON requested");
+                            req_InputOutputControlByLocalId(valve_id, OP_WRITE, ON); // valve currently disabled - send ON                                    
+                        }
+                }
+
+                function togglePUMP()
+                {
+                        req_InputOutputControlByLocalId(IO_PUMP_MOTOR, OP_WRITE, (pump_state==1)?OFF:ON);
+                }
+                function sleep(delay) {
+                        var start = new Date().getTime();
+                        while (new Date().getTime() < start + delay);
+                    }    
+
+               function test()
+               {
+                let x=200;
+                let op = 7;
+
+                req_InputOutputControlByLocalId(0x1, op);
+                sleep(x);
+                req_InputOutputControlByLocalId(0x2, op);
+                sleep(x);
+                req_InputOutputControlByLocalId(0x3, op);
+                sleep(x);
+                
+                
+                req_InputOutputControlByLocalId(0x11, op);
+                sleep(x);
+                req_InputOutputControlByLocalId(0x12, op);
+                
+
+                return;
+                
+                //req_InputOutputControlByLocalId(0x21, OP_READ);
+                //req_InputOutputControlByLocalId(0x22, OP_READ);
+
+                //req_InputOutputControlByLocalId(0x41, OP_READ);
+                //req_InputOutputControlByLocalId(0x42, OP_READ);
+
+                //req_InputOutputControlByLocalId(0x49, OP_READ);
+                
+                for (i=0x0;i<0x13;i++)
+                {
+                
+                    req_InputOutputControlByLocalId(i, 0x1);
+                    sleep(800); 
+                }
+               }
+
         $(document).ready(function() {
-            $("#btn-StartCommunication").on("click", function(e) {
-                e.preventDefault();
-                $.ajax({type: "GET",
-                    url: "/StartCommunication",
-                    data: { id: $(this).val() },
-                    success:function(result) {
-                        //  alert('ok');
-                    },
-                    error:function(result) {
-                        alert('error');
-                    }
-                });
-            });
-        });
+            
+            ws = ebc430_init();
+            var interval_refresh;
+
+            ws.onopen  = function (event) {
+                req_StartCommunication();
+
+                interval_refresh = window.setInterval(function(){                    
+                    req_ReadAllStates();        // refresh all IO states
+                }, DEFAULT_POLLING_INTERVAL);
+            
+            }
+
+            ws.onclose = function(event) {
+                console.log("ws.onclose");
+                clearInterval(interval_refresh);
+            }
+
+            ws.onmessage = function (event) {
+                  //console.log("ws.onmessage()");
+                  //console.log(event.data);
+                  try {
+                        data = JSON.parse(event.data);                       
+                        switch (parseInt(data.sid))
+                        {
+                            case KWP_SID_ERR:                   resp_ErrorMessage(data); break;
+                            case KWP_SID_STARTCOMMUNICATION:    resp_StartCommunication(data); break;
+                            case KWP_SID_INPUTOUTPUTCONTROLBYLOCALID: resp_InputOutputControlByLocalId(data); break;
+                        }
+                  }
+                  catch (e)
+                  {
+                      console.log("ws.onmessage() JSON.parse error "+e);
+                  }                                  
+            }                    
+        });      
     </script>
 </body>
 </html>

@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-#define DBG_EBC430  1
+// #define DBG_EBC430  1
 
 // ReadECUIdentification Options
 #define EBC_OPT_ALL           0x80
@@ -28,17 +28,18 @@ void ReadECUIdentificationCB(uint8_t *payload_bytes, uint8_t payload_len);
 void ReadDataByLocalIdCB(uint8_t *payload_bytes, uint8_t payload_len);
 void ReadDiagnosticTroubleCodeByStatusCB(uint8_t *payload_bytes, uint8_t payload_len);
 void ClearDiagnosticInformationServiceCB(uint8_t *payload_bytes, uint8_t payload_len);
+void InputOutputControlByLocalIdCB(uint8_t *payload_bytes, uint8_t payload_len);
 
 // ReadECUIdentification Options variables
-extern char ecu_id_designcode[12];     // Design Code A120J6000F_
-extern char ecu_id_hardware[7];        // Hardware EBC430
-extern char ecu_id_software[12];       // Software LCFWDQ04K2K
-extern char ecu_id_date[10];           // Date of Production 03/02/25
+//extern char ecu_id_designcode[12];     // Design Code A120J6000F_
+//extern char ecu_id_hardware[7];        // Hardware EBC430
+//extern char ecu_id_software[12];       // Software LCFWDQ04K2K
+//extern char ecu_id_date[10];           // Date of Production 03/02/25
 
 // ReadDataByLocalId Records variables
-extern float ecu_voltage;               // Battery Voltage
-extern float speed_fl;                  // Front Left Wheel kph
-extern float speed_fr;                  // Front Left Wheel kph
-extern float speed_rl;                  // Front Left Wheel kph
-extern float speed_rr;                  // Front Left Wheel kph
+//extern float ecu_voltage;               // Battery Voltage
+//extern float speed_fl;                  // Front Left Wheel kph
+//extern float speed_fr;                  // Front Left Wheel kph
+//extern float speed_rl;                  // Front Left Wheel kph
+//extern float speed_rr;                  // Front Left Wheel kph
 #endif /* _EBC430_H */
