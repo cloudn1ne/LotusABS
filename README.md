@@ -32,6 +32,4 @@ The project is based on PLATFORM.IO - download VS Code and install platform IO (
 see KiCAD
 
 
-
-
 ### As usual that tool comes with no warranty, it might blow up your airbags (same KLINE) or set your car on fire. Good luck ;-)
