@@ -25,4 +25,13 @@ It was made with KiCAD (www.kicad.org)
 Not much - i didnt have one, so i had to roll my own - the most notible difference is that the KLINE line has to be on PIN #12 of the OBD connector (usualy it would be Pin #7)
 And you wont have a GUI to control stuff.
 
+## Software
+The project is based on PLATFORM.IO - download VS Code and install platform IO (https://platformio.org/) 
+
+## Hardware
+see KiCAD
+
+
+
+
 ### As usual that tool comes with no warranty, it might blow up your airbags (same KLINE) or set your car on fire. Good luck ;-)
