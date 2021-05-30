@@ -4,3 +4,5 @@
 .vscode/launch.json
 .vscode/ipch
 .DS_Store
+FIRMWARE.bin
+LITTLEFS.bin
