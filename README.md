@@ -12,12 +12,14 @@
 The software part is a pretty minimum implementation of the KWP2000 via K-LINE as used by the EBC430 EBC.
 The supported Service IDs are:
 
-StartCommunication - start a KWP2000 session
-ReadECUIdentification - ECU details, nothing new here - same as listed in the Lotus Service Manual
-ReadDataByLocalId - battery voltage, wheel speeds (not implemented, because my car is not moving atm)
-ReadDiagnosticTroubleCodeByStatus - read DTC codes and status reasons
-ClearDiagnosticInformationService - clear and DTCs
-InputOutputControlByLocalId - control the valves, pump, relay
+Function | Usage
+-------- | -----
+StartCommunication | start a KWP2000 session
+ReadECUIdentification | ECU details, nothing new here - same as listed in the Lotus Service Manual
+ReadDataByLocalId | battery voltage, wheel speeds (not implemented, because my car is not moving atm)
+ReadDiagnosticTroubleCodeByStatus | read DTC codes and status reasons
+ClearDiagnosticInformationService | clear and DTCs
+InputOutputControlByLocalId | control the valves, pump, relay
 
 So with that you can establish communication with the ECU, get software/hardware versions, battery voltage (wheels speeds later on), read and clear DTCs, and most importantly
 control the valves, pump and valve relay to aid with bleeding.
