@@ -1,3 +1,10 @@
+/*
+ * Lotus ABS ECU Tool
+ * (c) Georg Swoboda, 2021
+ *
+ * >> Poor mans KWP2k implementation, as async as possible to not waste any cycles while waiting <<
+ */
+
 #include <Arduino.h>
 #include "kwp.h"
 #include "log.h"

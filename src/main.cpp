@@ -1,3 +1,10 @@
+/*
+ * Lotus ABS ECU Tool
+ * (c) Georg Swoboda, 2021
+ *
+ * >> Init Wifi, Main Loop, Handle Websockets <<
+ */
+
 #include <Arduino.h>
 #include <SoftwareSerial.h>
 #include <FS.h>     
@@ -12,7 +19,17 @@
 #include "log.h"
 #include "ebc430.h"
 
-// #define   DBG_TASKS
+#define WIFI_AP_SSID  "LOTUS-ABS"
+#define WIFI_AP_PASS  ""
+const byte DNS_PORT = 53;
+IPAddress apIP(192, 168, 1, 1);
+DNSServer dnsServer;
+
+//#define WIFI_DEBUG 0   // enable this and set WIFI_JOIN_SSID and WIFI_JOIN_PW to join an AP (handy for debugging)
+#ifdef WIFI_DEBUG
+ #define WIFI_JOIN_SSID "cloud9"
+ #define WIFI_JOIN_PW ""
+#endif
 
 #define TX 1
 #define RX 3
@@ -29,7 +46,7 @@ Task OKLEDTask(1000, -1, &OKLEDTaskCallback);
 
 bool state_ok_led = true;
 
-uint8_t ecu_addr_glob = 0x1;
+// uint8_t ecu_addr_glob = 0x1;
 
 void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length) 
 {
@@ -76,7 +93,6 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
 
 }
 
-
 void setup() {
 
   // Taskrunner
@@ -86,13 +102,27 @@ void setup() {
   // Setup Serial
   Serial.begin(10400);
   
-  // SETUP WiFI  
+  // SETUP WiFI (Normal AP Mode)
+#ifndef WIFI_DEBUG   
+  WiFi.mode(WIFI_AP);
+  WiFi.softAPConfig(apIP, apIP, IPAddress(255, 255, 255, 0));
+  boolean state = WiFi.softAP(WIFI_AP_SSID,WIFI_AP_PASS);
+  while (!state) {
+    Serial.println("Creating access point failed");
+    // don't continue - WD will kill us
+    while (true);
+  }
+  dnsServer.start(DNS_PORT, "*", apIP);  
+#else
+  // (Debug join AP Mode)
   WiFi.mode(WIFI_STA);  
   WiFi.begin("CLOUD9", "deepspace48");  
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
   }
+  Serial.printf("\n===================================\nLotusABS IP address is: %d.%d.%d.%d\n", WiFi.localIP()[0], WiFi.localIP()[1], WiFi.localIP()[2], WiFi.localIP()[3]);  
+#endif
 
   mqtt_setup();
   log_msg("\n===================================\nLotusABS IP address is: %d.%d.%d.%d\n", WiFi.localIP()[0], WiFi.localIP()[1], WiFi.localIP()[2], WiFi.localIP()[3]);
@@ -146,12 +176,10 @@ void setup() {
     ws_server.onEvent(webSocketEvent);
 }
 
+// not that useful, but everybody likes blinkenlights ;)
+// might use that for something else one day
 void OKLEDTaskCallback()
-{
-#ifdef DBG_TASKS
-  log_msg("OKLEDTaskCallback()\n");
-#endif  
-  // not that useful, but everybody likes blinkenlights ;)
+{  
   digitalWrite(LED_OK, state_ok_led);
   state_ok_led = !state_ok_led;
 }
@@ -159,10 +187,12 @@ void OKLEDTaskCallback()
 void loop() {
 
   mqtt_loop();
-  ABS.process();
- //  AsyncElegantOTA.loop();
+  ABS.process(); 
   Taskrunner.execute();
   server.handleClient();
   ws_server.loop();
+#ifndef WIFI_DEBUG    
+  dnsServer.processNextRequest();
+#endif
 }
 

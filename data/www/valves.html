@@ -205,7 +205,7 @@
        
                 function resp_InputOutputControlByLocalId(data)
                 {        
-                        console.log("resp_InputOutputControlByLocalId(ctrl_param="+data.ctrl_param+" ctrl_state="+data.ctrl_state+")");
+                      //  console.log("resp_InputOutputControlByLocalId(ctrl_param="+data.ctrl_param+" ctrl_state="+data.ctrl_state+")");
                       //  console.log(data);                          
                         if (data.ctrl_param == OP_READ)
                         {
@@ -254,13 +254,15 @@
                             if (data.id == IO_RELAY)    
                                 req_InputOutputControlByLocalId(IO_RELAY, OP_READ);       
                         }
+                        var pval=100;
+                        $('#StartCommunicationrogress').css('width', pval+'%').attr('aria-valuenow', pval);
+                        $('#StartCommunicationModalTitle').html("Reading IO states complete");                        
+                        $('#StartCommunicationModal').modal('hide');
                 }
 
                 function req_ReadAllStates()
                 {
-                        req_InputOutputControlByLocalId(IO_ALL_VALVES, OP_READ);
-                        //req_InputOutputControlByLocalId(IO_PUMP_MOTOR, OP_READ);
-                        //req_InputOutputControlByLocalId(IO_RELAY, OP_READ);                        
+                        req_InputOutputControlByLocalId(IO_ALL_VALVES, OP_READ);                                       
                 }
 
                 function setValveStatusON(valve_bit)
@@ -297,47 +299,13 @@
                 {
                         req_InputOutputControlByLocalId(IO_PUMP_MOTOR, OP_WRITE, (pump_state==1)?OFF:ON);
                 }
+
                 function sleep(delay) {
                         var start = new Date().getTime();
                         while (new Date().getTime() < start + delay);
-                    }    
+                }    
 
-               function test()
-               {
-                let x=200;
-                let op = 7;
-
-                req_InputOutputControlByLocalId(0x1, op);
-                sleep(x);
-                req_InputOutputControlByLocalId(0x2, op);
-                sleep(x);
-                req_InputOutputControlByLocalId(0x3, op);
-                sleep(x);
-                
-                
-                req_InputOutputControlByLocalId(0x11, op);
-                sleep(x);
-                req_InputOutputControlByLocalId(0x12, op);
-                
-
-                return;
-                
-                //req_InputOutputControlByLocalId(0x21, OP_READ);
-                //req_InputOutputControlByLocalId(0x22, OP_READ);
-
-                //req_InputOutputControlByLocalId(0x41, OP_READ);
-                //req_InputOutputControlByLocalId(0x42, OP_READ);
-
-                //req_InputOutputControlByLocalId(0x49, OP_READ);
-                
-                for (i=0x0;i<0x13;i++)
-                {
-                
-                    req_InputOutputControlByLocalId(i, 0x1);
-                    sleep(800); 
-                }
-               }
-
+              
         $(document).ready(function() {
             
             ws = ebc430_init();
@@ -353,7 +321,7 @@
             }
 
             ws.onclose = function(event) {
-                console.log("ws.onclose");
+          //      console.log("ws.onclose");
                 clearInterval(interval_refresh);
             }
 

@@ -1,3 +1,11 @@
+/*
+ * Lotus ABS ECU Tool
+ * (c) Georg Swoboda, 2021
+ *
+ * >> Callback functions for ECU replies, decode data and feed websocket back to the webapp <<
+ */
+
+
 #include "log.h"
 #include "kwp.h"
 #include "web.h"
