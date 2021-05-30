@@ -1,16 +1,11 @@
 # LotusABS
 
 <img src='https://raw.githubusercontent.com/cloudn1ne/LotusABS/master/pic/board1.jpg' width='300'>
+<img src='https://raw.githubusercontent.com/cloudn1ne/LotusABS/master/pic/board2.jpg' width='300'>
+<img src='https://raw.githubusercontent.com/cloudn1ne/LotusABS/master/pic/index.png' width='300'>
+<img src='https://raw.githubusercontent.com/cloudn1ne/LotusABS/master/pic/dtc.png' width='300'>
+<img src='https://raw.githubusercontent.com/cloudn1ne/LotusABS/master/pic/valves.png' width='300'>
 
-![PCB1](https://raw.githubusercontent.com/cloudn1ne/LotusABS/master/pic/board1.jpg | width=300)
-
-![PCB2](ttps://raw.githubusercontent.com/cloudn1ne/LotusABS/master/pic/board2.jpg | width=300)
-
-![INDEX](https://raw.githubusercontent.com/cloudn1ne/LotusABS/master/pic/index.png | width=300)
-
-![DTC](https://raw.githubusercontent.com/cloudn1ne/LotusABS/master/pic/DTC.png | width=300)
-
-![VALVES](https://raw.githubusercontent.com/cloudn1ne/LotusABS/master/pic/valves.png | width=300)
 
 ## What can you do with it ?
 
